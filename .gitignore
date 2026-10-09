@@ -1,0 +1,27 @@
+node_modules/
+build/
+!build/icon.png
+!build/icon.ico
+dist/
+coverage/
+.DS_Store
+*.log
+.abxag-data/
+cognition/*.json
+.env*
+!.env.example
+# Build & release artifacts (regenerated locally; installers are ~150MB)
+release/
+release-public/
+agent_dist/
+agent_build/
+# Local-only 3D model downloads (licences forbid redistribution)
+MODELS FOR ABxAG/
+# Runtime / tooling noise
+logs/
+__pycache__/
+.playwright-mcp/
+*.blockmap
+builder-debug.yml
+
+
