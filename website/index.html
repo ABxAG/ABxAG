@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ABxAG — Your Private 3D AI Desktop Companion</title>
+  <meta name="description" content="ABxAG is a private 3D AI companion for Windows. Talk by voice, let her see your screen, control apps and files — powered by your own Gemini API key." />
+  <link rel="icon" type="image/jpeg" href="./ABxAG.jpg" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="bg-glow" aria-hidden="true"></div>
+
+  <header class="nav">
+    <a class="brand" href="./">
+      <img src="./ABxAG.jpg" alt="ABxAG logo" />
+      <span>ABxAG</span>
+    </a>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#models">Models</a>
+      <a href="#download">Download</a>
+      <a href="https://github.com/ABxAG/ABxAG" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-text">
+        <div class="pill">v1.1.1 · First public release · Windows 10/11</div>
+        <h1>Your private<br /><span class="grad">3D AI companion</span><br />for the desktop.</h1>
+        <p class="lede">
+          ABxAG talks with you by voice, sees your screen when you allow it,
+          controls apps and files on your PC — and lives on your desktop as a
+          character you can drag onto any window.
+        </p>
+        <div class="cta-row">
+          <a class="btn primary" href="https://github.com/ABxAG/ABxAG/releases/latest" target="_blank" rel="noopener">⬇ Download for Windows</a>
+          <a class="btn ghost" href="https://github.com/ABxAG/ABxAG" target="_blank" rel="noopener">View source</a>
+        </div>
+        <p class="fine">Free · Bring your own Gemini API key · Your data never leaves your PC</p>
+      </div>
+      <div class="hero-art">
+        <img src="./ABxAG.jpg" alt="ABxAG" />
+      </div>
+    </section>
+
+    <section id="features" class="section">
+      <h2>What she can do</h2>
+      <div class="grid">
+        <div class="card">
+          <div class="icon">🎙</div>
+          <h3>Voice conversation</h3>
+          <p>Natural low-latency voice chat powered by Gemini Live. Say <code>“Hey AB”</code> to wake her while the window is open.</p>
+        </div>
+        <div class="card">
+          <div class="icon">👁</div>
+          <h3>Screen vision</h3>
+          <p>Share your screen and ask what she sees — errors, documents, anything. Screen text is always treated as untrusted data.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🖱</div>
+          <h3>Real PC control</h3>
+          <p>Opens apps, drives mouse &amp; keyboard, manages files, chats and websites — with confirmation for risky actions.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🧠</div>
+          <h3>Memory &amp; initiative</h3>
+          <p>Episodic memory, goals, learned skills and a polite sense of when to speak up — all processed locally.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🔒</div>
+          <h3>Private by design</h3>
+          <p>Your Gemini key is encrypted with Windows DPAPI and never reaches the web page. All AI calls go through your local backend.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🛑</div>
+          <h3>You stay in charge</h3>
+          <p>Emergency stop shortcut, permission toggles, and “stop / cancel / don’t do that” always wins.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="models" class="section">
+      <h2>Bring any character</h2>
+      <p class="center muted">ABxAG ships without a bundled model — import your own. Every format below loads out of the box:</p>
+      <div class="chips">
+        <span>.pmx</span><span>.pmd</span><span>.vrm</span><span>.glb</span><span>.gltf</span><span>.fbx</span><span>.obj</span>
+      </div>
+      <p class="center muted">…or drop a <code>.zip</code> / folder containing one. Only use models whose licence allows your use.</p>
+    </section>
+
+    <section id="download" class="section">
+      <h2>Download</h2>
+      <div class="dl-card">
+        <img src="./ABxAG.jpg" alt="ABxAG logo" />
+        <div>
+          <h3>ABxAG for Windows <span class="ver">v1.1.1</span></h3>
+          <p class="muted">Windows 10/11 64-bit · Node.js not required for the installer · Python not required (agent is bundled)</p>
+          <div class="cta-row">
+            <a class="btn primary" href="https://github.com/ABxAG/ABxAG/releases/latest" target="_blank" rel="noopener">⬇ Get ABxAG-Setup.exe</a>
+            <a class="btn ghost" href="https://aistudio.google.com" target="_blank" rel="noopener">Get a free Gemini key</a>
+          </div>
+          <ol class="steps">
+            <li>Install and launch ABxAG.</li>
+            <li>Paste your free Gemini API key (stored encrypted on your PC).</li>
+            <li>Press <b>Import my character</b> and pick a model file.</li>
+            <li>Say <code>“Hey AB”</code>.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Developers</h2>
+      <div class="grid two">
+        <div class="card">
+          <h3>Full source on GitHub</h3>
+          <p>React + three.js frontend, Express/WebSocket backend, Electron shell, Python desktop agent, cognitive runtime — on the <code>DEV</code> branch.</p>
+          <p><code>git clone -b DEV https://github.com/ABxAG/ABxAG.git</code></p>
+        </div>
+        <div class="card">
+          <h3>Run from source</h3>
+          <p><code>npm install</code><br /><code>pip install -r desktop_agent/requirements.txt</code><br /><code>npm run dev</code></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="foot-inner">
+      <span><b>ABxAG</b> · a private 3D AI desktop companion</span>
+      <span>
+        <a href="https://github.com/ABxAG/ABxAG" target="_blank" rel="noopener">GitHub</a> ·
+        <a href="https://github.com/ABxAG/ABxAG/releases/latest" target="_blank" rel="noopener">Releases</a>
+      </span>
+    </div>
+  </footer>
+</body>
+</html>
