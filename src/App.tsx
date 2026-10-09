@@ -27,6 +27,7 @@ import { Memory, MemoryCategory } from "./lib/memoryTypes";
 import { MemoryDashboard } from "./components/MemoryDashboard";
 import { SettingsPanel, type SettingsSection } from "./components/SettingsPanel";
 import { TaskHud } from "./components/TaskHud";
+import { UpdatePrompt } from "./components/UpdatePrompt";
 import { ModelChip } from "./components/ModelSelector";
 import { Onboarding } from "./components/Onboarding";
 import { api, type AppSettings, type AppSettingsPatch } from "./lib/appApi";
@@ -1141,6 +1142,9 @@ export default function App() {
         }}
         themeColor={themeColor}
       />
+
+      {/* Post-update reminder: small daily popup when a newer version exists. */}
+      <UpdatePrompt app={appSettings} onPatch={handleAppSettingsChange} />
 
       <AnimatePresence>
         {showOnboarding && appSettings && (

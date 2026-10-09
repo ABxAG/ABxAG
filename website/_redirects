@@ -1,0 +1,3 @@
+# Canonical lowercase download page; keeps the exact /DownLoad URL working too.
+/DownLoad /download/ 301
+/download /download/ 301
