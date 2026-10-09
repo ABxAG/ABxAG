@@ -60,15 +60,10 @@
       const list = document.getElementById('list');
       function mb(n) { return (n / 1048576).toFixed(1) + ' MB'; }
       function esc(s) { return String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
-      try {
-        const res = await fetch('https://api.github.com/ABxAG/ABxAG/releases?per_page=30', {
-          headers: { 'Accept': 'application/vnd.github+json' }
-        });
-        if (!res.ok) throw new Error('GitHub answered ' + res.status);
-        const data = await res.json();
+      function render(data) {
         const rels = (Array.isArray(data) ? data : []).filter(r => !r.draft);
-        if (!rels.length) { status.textContent = 'No releases yet.'; return; }
-        status.remove();
+        if (!rels.length) return false;
+        list.innerHTML = '';
         rels.forEach((r, i) => {
           const tag = String(r.tag_name || '').replace(/^[vV]/, '');
           const assets = Array.isArray(r.assets) ? r.assets : [];
@@ -90,7 +85,23 @@
             '</div>';
           list.appendChild(card);
         });
-      } catch (e) {
+        return true;
+      }
+      // 1) Bundled snapshot (ships with the site — always works, even where
+      //    api.github.com is blocked). 2) Live refresh when reachable.
+      let shown = false;
+      try {
+        const snap = await fetch('../releases.json', { cache: 'no-store' });
+        if (snap.ok && render(await snap.json())) { shown = true; status.remove(); }
+      } catch (e) { /* fall through to live API */ }
+      try {
+        const res = await fetch('https://api.github.com/ABxAG/ABxAG/releases?per_page=30', {
+          headers: { 'Accept': 'application/vnd.github+json' }
+        });
+        if (!res.ok) throw new Error('GitHub answered ' + res.status);
+        if (render(await res.json())) { if (!shown) status.remove(); shown = true; }
+      } catch (e) { /* keep whatever is shown */ }
+      if (!shown) {
         status.innerHTML = 'Could not load the release list. Get every version on ' +
           '<a href="https://github.com/ABxAG/ABxAG/releases" target="_blank" rel="noopener">GitHub Releases</a>.';
       }
