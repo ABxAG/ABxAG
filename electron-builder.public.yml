@@ -1,0 +1,59 @@
+# Public installer for sharing ABxAG (npm run dist:public).
+#
+# Differences from electron-builder.yml (the owner's personal build):
+#  - No bundled character model. The included models' licences forbid
+#    redistribution ("请勿二次配布"), so each user imports their own MMD
+#    character on first run (the app shows an "Import my character" screen).
+#  - Built with VITE_ABxAG_PUBLIC=1 so the app expects that.
+# API keys and personal data are never packaged by either build: they live in
+# %APPDATA%\ABxAG on each PC (keys DPAPI-encrypted per Windows user), and
+# .env / .abxag-data are not in `files`.
+appId: dev.absup.abxag
+productName: ABxAG
+copyright: Copyright © 2026 ABxAG
+afterPack: electron/afterPack.cjs
+
+directories:
+  output: release-public
+  buildResources: build
+
+asar: false
+
+files:
+  - electron/**/*
+  - dist/**/*
+  - assets/**/*
+  - "!assets/characters/**"
+  - build/icon.png
+  - build/icon.ico
+  - package.json
+  - "!**/.env*"
+
+extraResources:
+  - from: agent_dist/abxag
+    to: agent
+    filter: ["**/*"]
+
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: ABxAG
+  artifactName: ${productName}-Setup-${version}.${ext}
+
+portable:
+  artifactName: ${productName}-Portable-${version}.${ext}
+
+
+

@@ -1,0 +1,66 @@
+{
+  "name": "abxag",
+  "productName": "ABxAG",
+  "description": "ABxAG \u2014 a private 3D AI desktop companion powered by each user's own Gemini API key.",
+  "author": "ABxAG",
+  "private": true,
+  "version": "1.1.1",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "tsx server.ts",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "start": "node dist/server.cjs",
+    "preview": "vite preview",
+    "clean": "rm -rf dist server.js",
+    "lint": "tsc --noEmit",
+    "test:cognition": "node --import tsx --test cognition/tests/*.test.ts",
+    "test:screen-vision": "node --import tsx --test server_screenVision.test.ts",
+    "test:real-browser": "node --import tsx --test server_realBrowser.test.ts",
+    "test:api-hub": "node --import tsx --test api_hub/tests/*.test.ts",
+    "test:python": "python -m unittest discover -s desktop_agent -p \"test_*.py\"",
+    "simulate:cognition": "tsx scripts/simulate-cognition.ts",
+    "electron": "electron .",
+    "app": "npm run build && electron .",
+    "dist": "npm run build && npm run build:launcher && electron-builder --win nsis portable",
+    "dist:public": "set VITE_ABxAG_PUBLIC=1&& npm run build && npm run build:launcher && electron-builder --config electron-builder.public.yml --win nsis portable",
+    "build:launcher": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-launcher.ps1",
+    "test:characters": "node --import tsx --test tests/characters.test.ts",
+    "test:agent": "node --import tsx --test tests/core.test.ts tests/models.test.ts tests/agentLoop.test.ts tests/presence.test.ts tests/chatOpen.test.ts",
+    "test": "npm run lint && npm run test:agent && npm run test:characters && npm run test:python",
+    "import:character": "tsx tools/import-character.ts"
+  },
+  "dependencies": {
+    "@google/genai": "^2.4.0",
+    "@tailwindcss/vite": "^4.1.14",
+    "@vitejs/plugin-react": "^5.0.4",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "koffi": "^2.16.3",
+    "lucide-react": "^0.546.0",
+    "mmd-parser": "^1.0.4",
+    "motion": "^12.23.24",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "three": "^0.180.0",
+    "vite": "^6.2.3",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.14.0",
+    "@types/three": "^0.185.1",
+    "@types/ws": "^8.18.1",
+    "autoprefixer": "^10.4.21",
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.25.0",
+    "tailwindcss": "^4.1.14",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.3"
+  }
+}
+
+
+
