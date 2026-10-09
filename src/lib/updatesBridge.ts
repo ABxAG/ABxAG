@@ -74,14 +74,29 @@ export function useUpdatesBridge(): UpdatesBridge | null {
   return getBridge();
 }
 
-/** Web fallback: read-only release list straight from the GitHub API. */
+/** Web fallback: read-only release list. Tries the GitHub API first, then our
+ *  own mirrored feed (api.github.com is unreachable from some networks). */
 export async function fetchReleasesWeb(): Promise<UpdateRelease[]> {
-  const res = await fetch("https://api.github.com/ABxAG/ABxAG/releases?per_page=20", {
-    headers: { Accept: "application/vnd.github+json" },
-  });
-  if (!res.ok) throw new Error(`GitHub answered ${res.status}.`);
-  const json = (await res.json()) as Array<any>;
-  return (Array.isArray(json) ? json : [])
+  const errors: string[] = [];
+  for (const url of [
+    "https://api.github.com/ABxAG/ABxAG/releases?per_page=20",
+    "https://abxag.absup.dev/releases.json",
+  ]) {
+    try {
+      const res = await fetch(url, {
+        headers: url.includes("api.github.com") ? { Accept: "application/vnd.github+json" } : undefined,
+      });
+      if (!res.ok) throw new Error(`server answered ${res.status}`);
+      return parseWebReleases(await res.json());
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : String(e));
+    }
+  }
+  throw new Error(errors.join(" · ") || "Could not load releases.");
+}
+
+function parseWebReleases(json: unknown): UpdateRelease[] {
+  return ((Array.isArray(json) ? json : []) as Array<any>)
     .filter((r) => !r.draft)
     .map((r) => {
       const assets = Array.isArray(r.assets) ? r.assets : [];

@@ -20,9 +20,15 @@ const os = require('os');
 const { spawn } = require('child_process');
 
 const RELEASES_URL = 'https://api.github.com/ABxAG/ABxAG/releases?per_page=20';
+// Same feed, mirrored on our own site: api.github.com is unreachable from
+// some networks (it 404s anonymously there), while abxag.absup.dev and
+// github.com downloads work fine. releases.json is refreshed every release.
+const FALLBACK_FEED_URL = 'https://abxag.absup.dev/releases.json';
 const ALLOWED_HOSTS = new Set([
   'api.github.com',
   'github.com',
+  'abxag.absup.dev',
+  'abxag.pages.dev',
   'objects.githubusercontent.com',
   'release-assets.githubusercontent.com',
 ]);
@@ -197,8 +203,22 @@ function createUpdater({ app, shell, BrowserWindow, log = () => {} }) {
     if (state.status === 'checking' || state.status === 'downloading' || installing) return snapshot();
     set({ status: 'checking', error: null });
     log(`[updates] checking (${reason})…`);
+    let json = null;
+    let feedError = null;
     try {
-      const json = await httpsGetJson(RELEASES_URL, userAgent);
+      json = await httpsGetJson(RELEASES_URL, userAgent);
+    } catch (err) {
+      feedError = err instanceof Error ? err.message : String(err);
+      log(`[updates] primary feed failed (${feedError}); trying mirror…`);
+      try {
+        json = await httpsGetJson(FALLBACK_FEED_URL, userAgent);
+        feedError = null;
+      } catch (mirrorErr) {
+        feedError = mirrorErr instanceof Error ? mirrorErr.message : String(mirrorErr);
+      }
+    }
+    try {
+      if (!json) throw new Error(feedError || 'Update server answered 404');
       const releases = parseReleases(json);
       const newer = releases.find((r) => compareVersions(r.version, currentVersion) > 0 && r.setupAsset) || null;
       state.lastCheckedAt = new Date().toISOString();
