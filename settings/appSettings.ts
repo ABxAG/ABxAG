@@ -102,6 +102,10 @@ export interface AppSettings {
     physicsDebug: boolean;
     verboseLogs: boolean;
   };
+  updates: {
+    /** auto: check + download in the background; manual: only on demand. */
+    mode: "auto" | "manual";
+  };
 }
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
@@ -185,6 +189,9 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     physicsDebug: false,
     verboseLogs: false,
   },
+  updates: {
+    mode: "auto",
+  },
 };
 
 const clamp = (value: unknown, min: number, max: number, fallback: number) => {
@@ -198,7 +205,7 @@ const bool = (value: unknown, fallback: boolean) => (typeof value === "boolean" 
 export function normalizeSettings(input: unknown, base: AppSettings = DEFAULT_APP_SETTINGS): AppSettings {
   const raw = (input && typeof input === "object" ? input : {}) as Record<string, any>;
   const d = base;
-  const b = raw.behavior || {}, a = raw.autonomy || {}, v = raw.voice || {}, c = raw.companion || {}, ch = raw.character || {}, p = raw.physics || {}, pr = raw.privacy || {}, pe = raw.performance || {}, dev = raw.developer || {}, gr = raw.graphics || {};
+  const b = raw.behavior || {}, a = raw.autonomy || {}, v = raw.voice || {}, c = raw.companion || {}, ch = raw.character || {}, p = raw.physics || {}, pr = raw.privacy || {}, pe = raw.performance || {}, dev = raw.developer || {}, gr = raw.graphics || {}, up = raw.updates || {};
   return {
     version: 3,
     onboardingComplete: bool(raw.onboardingComplete, d.onboardingComplete),
@@ -286,6 +293,9 @@ export function normalizeSettings(input: unknown, base: AppSettings = DEFAULT_AP
       debugView: bool(dev.debugView, d.developer.debugView),
       physicsDebug: bool(dev.physicsDebug, d.developer.physicsDebug),
       verboseLogs: bool(dev.verboseLogs, d.developer.verboseLogs),
+    },
+    updates: {
+      mode: oneOf(up.mode, ["auto", "manual"] as const, d.updates.mode),
     },
   };
 }

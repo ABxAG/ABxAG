@@ -35,6 +35,20 @@ contextBridge.exposeInMainWorld('abxag', {
   getDesktopCaptureSources,
   /** Native file picker for character import; returns an absolute path or null. */
   pickCharacterSource: () => ipcRenderer.invoke('dialog:pick-character'),
+  /** Self updater (GitHub Releases). Null-safe: absent outside Electron. */
+  updates: {
+    getState: () => ipcRenderer.invoke('updates:get-state'),
+    check: () => ipcRenderer.invoke('updates:check'),
+    download: (version) => ipcRenderer.invoke('updates:download', String(version || '')),
+    install: () => ipcRenderer.invoke('updates:install'),
+    setAuto: (enabled) => ipcRenderer.invoke('updates:set-auto', Boolean(enabled)),
+    openUrl: (url) => ipcRenderer.invoke('updates:open-url', String(url || '')),
+    onEvent: (callback) => {
+      const listener = (_event, state) => callback(state);
+      ipcRenderer.on('updates:event', listener);
+      return () => ipcRenderer.removeListener('updates:event', listener);
+    },
+  },
   /** Main window: open the Character Studio when asked from the tray/companion. */
   onOpenStudio: (callback) => {
     const listener = () => callback();

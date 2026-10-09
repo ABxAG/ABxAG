@@ -17,6 +17,7 @@ import {
 import type { ABxAGSettings } from "../lib/settingsStore";
 import { api, LOCKED_CAPABILITIES, type AppSettings, type AppSettingsPatch, type Decision, type ModelCatalogue, type PermissionsView, type MessageConfirmationMode } from "../lib/appApi";
 import { ModelSelectorPanel } from "./ModelSelector";
+import { AboutUpdates } from "./AboutUpdates";
 
 export type SettingsSection = "general" | "ai" | "voice" | "agent" | "privacy" | "presence" | "character" | "system" | "about";
 
@@ -621,11 +622,7 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, appSettings
 
                 {section === "about" && (
                   <div className="space-y-5">
-                    <Group title="ABxAG">
-                      <Row label="Version"><span className="font-mono text-[11px] text-slate-300">{__APP_VERSION__}</span></Row>
-                      <Row label="AI"><span className="text-[11px] text-slate-300">Google Gemini, with your own key</span></Row>
-                      <Row label="PC control"><span className="text-[11px] text-slate-300">Local desktop agent, permission-checked</span></Row>
-                    </Group>
+                    <AboutUpdates app={app} onPatch={patch} />
                     <Note tone="warn">
                       <AlertTriangle size={12} className="mr-1 inline" />
                       Characters you import stay on this PC. Many fan-made models forbid redistribution, so ABxAG never uploads or shares them.

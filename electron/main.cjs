@@ -18,6 +18,7 @@
 
 const { app, BrowserWindow, Menu, shell, dialog, ipcMain, desktopCapturer, session, screen, Tray, nativeImage, globalShortcut, powerMonitor, Notification } = require('electron');
 const { CompanionManager } = require('./companion.cjs');
+const { createUpdater } = require('./updates.cjs');
 const win32 = require('./win32.cjs');
 const path = require('path');
 const http = require('http');
@@ -88,6 +89,18 @@ let mainWindow = null;
 /** @type {BrowserWindow | null} */
 let splashWindow = null;
 let isQuitting = false;
+
+// ---------------------------------------------------------------------------
+// Self updater — GitHub Releases check/download/install (see updates.cjs).
+// Auto mode starts ON; the renderer syncs the persisted mode
+// (settings.updates.mode) once settings load via `updates:set-auto`.
+// ---------------------------------------------------------------------------
+const updater = createUpdater({
+  app,
+  shell,
+  BrowserWindow,
+  log: (...args) => console.log(...args),
+});
 
 // ---------------------------------------------------------------------------
 // Single-instance guard — second launches focus the existing window instead of
@@ -822,6 +835,20 @@ function startShell() {
     });
     return result.canceled || !result.filePaths[0] ? null : result.filePaths[0];
   });
+
+  // ---- self updater (see updates.cjs) -------------------------------------
+  for (const name of ['updates:get-state', 'updates:check', 'updates:download', 'updates:install', 'updates:set-auto', 'updates:open-url']) {
+    ipcMain.removeHandler(name);
+  }
+  ipcMain.handle('updates:get-state', () => updater.getState());
+  ipcMain.handle('updates:check', () => updater.check('manual'));
+  ipcMain.handle('updates:download', (_event, version) => updater.downloadVersion(String(version || '')));
+  ipcMain.handle('updates:install', () => updater.installDownloaded());
+  ipcMain.handle('updates:set-auto', (_event, enabled) => {
+    updater.setAuto(Boolean(enabled));
+    return updater.getState();
+  });
+  ipcMain.handle('updates:open-url', (_event, url) => updater.openExternal(url));
 }
 
 /** Physical vs synthetic input, aggregated before it reaches the backend. */
@@ -890,6 +917,11 @@ async function bootstrap() {
     await waitForBackend(SERVER_READY_TIMEOUT_MS);
     createMainWindow();
     startShell();
+    // Self-update: one quiet check at startup, then every 6h while auto is
+    // on. The renderer syncs the persisted mode shortly after via
+    // `updates:set-auto`; manual mode stops the interval.
+    updater.setAuto(true);
+    updater.check('auto').catch(() => {});
   } catch (err) {
     if (splashWindow) splashWindow.close();
     dialog.showErrorBox(
