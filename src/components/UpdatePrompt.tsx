@@ -9,15 +9,21 @@
  *   - [x] same as Later
  *   - Auto-update switch → persists settings.updates.mode
  *
- * Shown for update-available / downloading / downloaded states. Dismissing
- * without updating re-arms the popup for the next calendar day, so updates
- * are never silently missed. Desktop (Electron bridge) only.
+ * Two separate notices exist per version: "available" (a new version was
+ * found) and "downloaded" (its installer finished downloading). Dismissing
+ * the first does NOT suppress the second — so a background download that
+ * finishes later still announces itself with an Install button.
+ *
+ * In auto mode a ready download installs itself after a short visible
+ * countdown (cancellable via Later/Install now). Desktop (Electron) only.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowUpCircle, Download, Loader2, X, Check } from "lucide-react";
 import type { AppSettings, AppSettingsPatch } from "../lib/appApi";
 import { isDesktopWithUpdates, useUpdatesBridge, type UpdateState } from "../lib/updatesBridge";
+
+const AUTO_INSTALL_COUNTDOWN_SEC = 20;
 
 function todayLocal(): string {
   const d = new Date();
@@ -26,8 +32,16 @@ function todayLocal(): string {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
-function targetVersion(state: UpdateState): string | null {
-  return state.downloadedVersion ?? state.latestNewer;
+type NoticeKind = "available" | "downloaded";
+
+function noticeOf(state: UpdateState): { kind: NoticeKind; version: string } | null {
+  if (state.status === "downloaded" && state.downloadedVersion) {
+    return { kind: "downloaded", version: state.downloadedVersion };
+  }
+  if ((state.status === "update-available" || state.status === "downloading") && state.latestNewer) {
+    return { kind: "available", version: state.latestNewer };
+  }
+  return null;
 }
 
 export function UpdatePrompt({ app, onPatch }: { app: AppSettings | null; onPatch: (patch: AppSettingsPatch) => void }) {
@@ -36,7 +50,9 @@ export function UpdatePrompt({ app, onPatch }: { app: AppSettings | null; onPatc
   const [state, setState] = useState<UpdateState | null>(null);
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const installingRef = useRef(false);
 
   // Keep the main-process auto timer in sync from app entry (covers manual
   // mode immediately, not only when About is opened).
@@ -60,16 +76,15 @@ export function UpdatePrompt({ app, onPatch }: { app: AppSettings | null; onPatc
       clearTimeout(timer.current);
       timer.current = null;
     }
-    const version = targetVersion(state);
-    const showable =
-      version !== null &&
-      (state.status === "update-available" || state.status === "downloading" || state.status === "downloaded");
-    if (!showable) {
+    const notice = noticeOf(state);
+    if (!notice) {
       setVisible(false);
       return;
     }
     const alreadyPromptedToday =
-      app.updates.lastPromptVersion === version && app.updates.lastPromptDate === todayLocal();
+      app.updates.lastPromptVersion === notice.version &&
+      app.updates.lastPromptDate === todayLocal() &&
+      app.updates.lastPromptKind === notice.kind;
     if (alreadyPromptedToday) {
       setVisible(false);
       return;
@@ -82,29 +97,36 @@ export function UpdatePrompt({ app, onPatch }: { app: AppSettings | null; onPatc
         timer.current = null;
       }
     };
-  }, [desktop, bridge, state?.status, state?.latestNewer, state?.downloadedVersion, app?.updates.lastPromptVersion, app?.updates.lastPromptDate]);
+  }, [
+    desktop, bridge,
+    state?.status, state?.latestNewer, state?.downloadedVersion,
+    app?.updates.lastPromptVersion, app?.updates.lastPromptDate, app?.updates.lastPromptKind,
+  ]);
 
-  const markPrompted = useCallback((version: string) => {
-    onPatch({ updates: { lastPromptVersion: version, lastPromptDate: todayLocal() } });
+  const markPrompted = useCallback((version: string, kind: NoticeKind) => {
+    onPatch({ updates: { lastPromptVersion: version, lastPromptDate: todayLocal(), lastPromptKind: kind } });
   }, [onPatch]);
 
   const dismiss = useCallback(() => {
-    const version = state ? targetVersion(state) : null;
-    if (version) markPrompted(version);
+    const notice = state ? noticeOf(state) : null;
+    if (notice) markPrompted(notice.version, notice.kind);
+    installingRef.current = false;
+    setCountdown(null);
     setVisible(false);
   }, [state, markPrompted]);
 
   const updateNow = useCallback(async () => {
     if (!bridge || !state || busy) return;
-    const version = targetVersion(state);
-    if (!version) return;
+    const notice = noticeOf(state);
+    if (!notice) return;
     setBusy(true);
     try {
-      if (state.downloadedVersion === version) {
-        markPrompted(version);
+      if (state.downloadedVersion === notice.version) {
+        markPrompted(notice.version, notice.kind);
+        installingRef.current = true;
         setState(await bridge.install());
       } else {
-        setState(await bridge.download(version));
+        setState(await bridge.download(notice.version));
       }
     } catch (e) {
       setState((s) => (s ? { ...s, status: "error", error: e instanceof Error ? e.message : String(e) } : s));
@@ -113,14 +135,46 @@ export function UpdatePrompt({ app, onPatch }: { app: AppSettings | null; onPatc
     }
   }, [bridge, state, busy, markPrompted]);
 
-  if (!desktop || !state) return null;
-  const version = targetVersion(state);
-  const latest = version ? state.releases.find((r) => r.version === version) ?? null : null;
+  // Auto mode: a ready download installs itself after a visible countdown.
+  // Dismissing (Later/x) cancels it and records today's downloaded-notice.
   const auto = app?.updates.mode === "auto";
+  useEffect(() => {
+    if (!(visible && auto && state?.status === "downloaded" && state.downloadedVersion && bridge)) {
+      setCountdown(null);
+      return;
+    }
+    if (installingRef.current) return;
+    setCountdown(AUTO_INSTALL_COUNTDOWN_SEC);
+    const iv = setInterval(() => {
+      setCountdown((c) => {
+        if (c === null) return null;
+        if (c <= 1) {
+          clearInterval(iv);
+          if (!installingRef.current) {
+            installingRef.current = true;
+            const v = state.downloadedVersion as string;
+            markPrompted(v, "downloaded");
+            void bridge.install().then(setState).catch((e) => {
+              installingRef.current = false;
+              setState((s) => (s ? { ...s, status: "error", error: e instanceof Error ? e.message : String(e) } : s));
+            });
+          }
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [visible, auto, state?.status, state?.downloadedVersion, bridge, markPrompted]);
+
+  if (!desktop || !state) return null;
+  const notice = noticeOf(state);
+  const version = notice?.version ?? null;
+  const latest = version ? state.releases.find((r) => r.version === version) ?? null : null;
 
   return (
     <AnimatePresence>
-      {visible && version && (
+      {visible && version && notice && (
         <motion.div
           initial={{ opacity: 0, y: 24, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -136,7 +190,11 @@ export function UpdatePrompt({ app, onPatch }: { app: AppSettings | null; onPatc
               <div>
                 <div className="text-[13px] font-semibold text-white">Update available — v{version}</div>
                 <div className="text-[11px] text-slate-400">
-                  {state.status === "downloaded" ? "Downloaded and ready to install." : "A newer ABxAG is ready."}
+                  {state.status === "downloaded"
+                    ? countdown !== null
+                      ? `Auto-installing in ${countdown}s…`
+                      : "Downloaded and ready to install."
+                    : "A newer ABxAG is ready."}
                 </div>
               </div>
             </div>

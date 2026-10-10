@@ -109,6 +109,8 @@ export interface AppSettings {
     lastPromptVersion: string | null;
     /** Local calendar day (YYYY-MM-DD) the popup was last shown/dismissed. */
     lastPromptDate: string | null;
+    /** Which notice was shown: a new version exists vs it finished downloading. */
+    lastPromptKind: "available" | "downloaded" | null;
   };
 }
 
@@ -197,6 +199,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     mode: "auto",
     lastPromptVersion: null,
     lastPromptDate: null,
+    lastPromptKind: null,
   },
 };
 
@@ -304,6 +307,7 @@ export function normalizeSettings(input: unknown, base: AppSettings = DEFAULT_AP
       mode: oneOf(up.mode, ["auto", "manual"] as const, d.updates.mode),
       lastPromptVersion: typeof up.lastPromptVersion === "string" && /^[A-Za-z0-9._-]{1,32}$/.test(up.lastPromptVersion) ? up.lastPromptVersion : up.lastPromptVersion === null ? null : d.updates.lastPromptVersion,
       lastPromptDate: typeof up.lastPromptDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(up.lastPromptDate) ? up.lastPromptDate : up.lastPromptDate === null ? null : d.updates.lastPromptDate,
+      lastPromptKind: up.lastPromptKind === "available" || up.lastPromptKind === "downloaded" ? up.lastPromptKind : d.updates.lastPromptKind,
     },
   };
 }

@@ -159,7 +159,7 @@ export interface AppSettings {
   privacy: { screenAwareness: boolean; cameraPresence: boolean; clipboardInContext: boolean };
   performance: { activeFps: number; idleFps: number; sleepFps: number; perceptionPollSec: number };
   developer: { debugView: boolean; physicsDebug: boolean; verboseLogs: boolean };
-  updates: { mode: "auto" | "manual"; lastPromptVersion: string | null; lastPromptDate: string | null };
+  updates: { mode: "auto" | "manual"; lastPromptVersion: string | null; lastPromptDate: string | null; lastPromptKind: "available" | "downloaded" | null };
 }
 
 /** Deep-partial patch accepted by POST /api/app-settings. */
