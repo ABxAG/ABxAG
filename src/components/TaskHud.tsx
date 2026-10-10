@@ -17,7 +17,7 @@ import { api, TERMINAL_TASK_STATES, type ConfirmationRequest, type TaskView } fr
 import type { AppEventsState } from "../lib/useAppEvents";
 
 /** Tool results sometimes carry objects ({success, summary}); never render an object as a React child. */
-function asText(value: unknown): string {
+export function asText(value: unknown): string {
   if (value === null || value === undefined) return "";
   if (typeof value === "string") return value;
   if (typeof value === "number" || typeof value === "boolean") return String(value);
@@ -301,7 +301,8 @@ const TaskCard: React.FC<{ task: TaskView; question?: { question: string; option
       )}
       {terminal && (task.result || task.error) && (
         <p className={`mt-1.5 text-[11px] leading-relaxed ${task.state === "completed" ? "text-emerald-200/90" : "text-rose-200/90"}`}>
-          {task.state === "completed" ? task.result : task.error || task.result}
+          {/* result is {success, summary} from the agent — asText, never raw (raw objects crash React: error #31). */}
+          {task.state === "completed" ? asText(task.result) : asText(task.error) || asText(task.result)}
         </p>
       )}
 

@@ -7,7 +7,7 @@
 import React from 'react';
 
 const KEY = 'abxag:crash-reloads';
-const Base = (React as unknown as { Component: new (props: unknown) => { props: { children?: unknown }; state: { failed: boolean }; setState(s: { failed: boolean }): void } }).Component;
+const Base = (React as unknown as { Component: new (props: unknown) => { props: { children?: unknown }; state: { failed: boolean; message?: string; attempts?: number }; setState(s: { failed: boolean; message?: string; attempts?: number }): void } }).Component;
 
 function recentReloads(): number[] {
   try {
@@ -19,10 +19,14 @@ function recentReloads(): number[] {
 }
 
 export class CrashGuard extends Base {
-  state = { failed: false };
+  state = { failed: false, message: "", attempts: 0 };
 
-  static getDerivedStateFromError(): { failed: boolean } {
-    return { failed: true };
+  static getDerivedStateFromError(error: unknown): { failed: boolean; message: string; attempts: number } {
+    return {
+      failed: true,
+      message: error instanceof Error ? error.message.slice(0, 300) : String(error).slice(0, 300),
+      attempts: recentReloads().length,
+    };
   }
 
   componentDidCatch(error: unknown): void {
@@ -39,9 +43,13 @@ export class CrashGuard extends Base {
 
   render(): unknown {
     if (!this.state.failed) return this.props.children;
+    const state = this.state as { failed: boolean; message?: string; attempts?: number };
     return (
-      <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0f', color: '#cbd5e1', fontFamily: 'system-ui, sans-serif', fontSize: 14, flexDirection: 'column', gap: 12 }}>
+      <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0f', color: '#cbd5e1', fontFamily: 'system-ui, sans-serif', fontSize: 14, flexDirection: 'column', gap: 12, padding: 24, textAlign: 'center' }}>
         <div>ABxAG hit a problem and is reloading…</div>
+        {state.message && (
+          <div style={{ maxWidth: 520, fontSize: 11, color: '#64748b', wordBreak: 'break-word' }}>{state.message}</div>
+        )}
         <button type="button" onClick={() => window.location.reload()} style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #334155', background: '#111827', color: '#e2e8f0', cursor: 'pointer' }}>
           Reload now
         </button>

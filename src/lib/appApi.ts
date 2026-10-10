@@ -40,7 +40,8 @@ export interface TaskView {
   startedAt: string;
   updatedAt: string;
   completedAt?: string | null;
-  result?: string | null;
+  /** The agent sends {success, summary} objects here — always render via asText(), never raw. */
+  result?: string | { success: boolean; summary: string } | null;
   error?: string | null;
   steps?: number;
   sensitive?: boolean;
