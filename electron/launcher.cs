@@ -7,8 +7,8 @@ using System.Windows.Forms;
 [assembly: AssemblyTitle("ABxAG")]
 [assembly: AssemblyDescription("ABxAG Desktop Companion Launcher")]
 [assembly: AssemblyProduct("ABxAG")]
-[assembly: AssemblyCompany("ABxAG")]
-[assembly: AssemblyCopyright("Copyright © 2026 ABxAG")]
+[assembly: AssemblyCompany("ABsUP")]
+[assembly: AssemblyCopyright("Copyright © 2026 ABsUP")]
 [assembly: AssemblyVersion("1.0.1.0")]
 [assembly: AssemblyFileVersion("1.0.1.0")]
 
