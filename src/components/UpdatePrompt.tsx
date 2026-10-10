@@ -124,7 +124,7 @@ export function UpdatePrompt({ app, onPatch }: { app: AppSettings | null; onPatc
       if (state.downloadedVersion === notice.version) {
         markPrompted(notice.version, notice.kind);
         installingRef.current = true;
-        setState(await bridge.install());
+        setState(await bridge.install(false));
       } else {
         setState(await bridge.download(notice.version));
       }
@@ -136,10 +136,13 @@ export function UpdatePrompt({ app, onPatch }: { app: AppSettings | null; onPatc
   }, [bridge, state, busy, markPrompted]);
 
   // Auto mode: a ready download installs itself after a visible countdown.
+  // Silent (/S, no wizard) when the installed build allows it; portable/dev
+  // builds never auto-install — the popup stays with an Install button.
   // Dismissing (Later/x) cancels it and records today's downloaded-notice.
   const auto = app?.updates.mode === "auto";
+  const allowSilent = state?.canSilentInstall !== false;
   useEffect(() => {
-    if (!(visible && auto && state?.status === "downloaded" && state.downloadedVersion && bridge)) {
+    if (!(visible && auto && allowSilent && state?.status === "downloaded" && state.downloadedVersion && bridge)) {
       setCountdown(null);
       return;
     }
@@ -154,7 +157,7 @@ export function UpdatePrompt({ app, onPatch }: { app: AppSettings | null; onPatc
             installingRef.current = true;
             const v = state.downloadedVersion as string;
             markPrompted(v, "downloaded");
-            void bridge.install().then(setState).catch((e) => {
+            void bridge.install(true).then(setState).catch((e) => {
               installingRef.current = false;
               setState((s) => (s ? { ...s, status: "error", error: e instanceof Error ? e.message : String(e) } : s));
             });
@@ -165,7 +168,7 @@ export function UpdatePrompt({ app, onPatch }: { app: AppSettings | null; onPatc
       });
     }, 1000);
     return () => clearInterval(iv);
-  }, [visible, auto, state?.status, state?.downloadedVersion, bridge, markPrompted]);
+  }, [visible, auto, allowSilent, state?.status, state?.downloadedVersion, bridge, markPrompted]);
 
   if (!desktop || !state) return null;
   const notice = noticeOf(state);

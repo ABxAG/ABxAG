@@ -843,7 +843,7 @@ function startShell() {
   ipcMain.handle('updates:get-state', () => updater.getState());
   ipcMain.handle('updates:check', () => updater.check('manual'));
   ipcMain.handle('updates:download', (_event, version) => updater.downloadVersion(String(version || '')));
-  ipcMain.handle('updates:install', () => updater.installDownloaded());
+  ipcMain.handle('updates:install', (_event, silent) => updater.installDownloaded(Boolean(silent)));
   ipcMain.handle('updates:set-auto', (_event, enabled) => {
     updater.setAuto(Boolean(enabled));
     return updater.getState();

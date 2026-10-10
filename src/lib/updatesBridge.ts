@@ -45,13 +45,16 @@ export interface UpdateState {
   downloadedFile: string | null;
   error: string | null;
   lastCheckedAt: string | null;
+  /** False for dev runs and the portable exe (silent /S needs the installed build). */
+  canSilentInstall?: boolean;
 }
 
 export interface UpdatesBridge {
   getState: () => Promise<UpdateState>;
   check: () => Promise<UpdateState>;
   download: (version: string) => Promise<UpdateState>;
-  install: () => Promise<UpdateState>;
+  /** silent=true runs the NSIS installer with /S (no wizard clicks). */
+  install: (silent?: boolean) => Promise<UpdateState>;
   setAuto: (enabled: boolean) => Promise<UpdateState>;
   openUrl: (url: string) => Promise<boolean>;
   onEvent: (callback: (state: UpdateState) => void) => () => void;

@@ -40,7 +40,7 @@ contextBridge.exposeInMainWorld('abxag', {
     getState: () => ipcRenderer.invoke('updates:get-state'),
     check: () => ipcRenderer.invoke('updates:check'),
     download: (version) => ipcRenderer.invoke('updates:download', String(version || '')),
-    install: () => ipcRenderer.invoke('updates:install'),
+    install: (silent) => ipcRenderer.invoke('updates:install', Boolean(silent)),
     setAuto: (enabled) => ipcRenderer.invoke('updates:set-auto', Boolean(enabled)),
     openUrl: (url) => ipcRenderer.invoke('updates:open-url', String(url || '')),
     onEvent: (callback) => {

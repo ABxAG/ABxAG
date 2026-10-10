@@ -161,9 +161,19 @@ function parseReleases(json) {
   return out;
 }
 
-function createUpdater({ app, shell, BrowserWindow, log = () => {} }) {
+function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = null }) {
   const currentVersion = app.getVersion();
   const userAgent = `ABxAG-Updater/${currentVersion}`;
+  const spawnInstaller = spawnFn || spawn;
+  // Silent (/S) installs only make sense for the installed (NSIS) build.
+  // Dev runs and the portable exe always use the interactive installer.
+  let canSilentInstall = false;
+  try {
+    const exePath = typeof app.getPath === 'function' ? String(app.getPath('exe') || '') : '';
+    canSilentInstall = Boolean(app.isPackaged) && !/portable/i.test(exePath);
+  } catch {
+    canSilentInstall = Boolean(app.isPackaged);
+  }
 
   const state = {
     status: 'idle', // idle|checking|up-to-date|update-available|downloading|downloaded|installing|error
@@ -175,6 +185,7 @@ function createUpdater({ app, shell, BrowserWindow, log = () => {} }) {
     downloadedFile: null,
     error: null,
     lastCheckedAt: null,
+    canSilentInstall,
   };
 
   let timer = null;
@@ -275,29 +286,38 @@ function createUpdater({ app, shell, BrowserWindow, log = () => {} }) {
     return snapshot();
   }
 
-  function installDownloaded() {
+  function installDownloaded(silent = false) {
+    if (!app.isPackaged) {
+      set({ status: 'error', error: 'Installing works only in the downloaded app — get the Setup installer from abxag.absup.dev/download/.' });
+      return snapshot();
+    }
     if (!state.downloadedFile || !fs.existsSync(state.downloadedFile)) {
       set({ status: 'error', error: 'The downloaded installer is gone — please download again.' });
       return snapshot();
     }
+    // Silent installs need the installed (non-portable) build; otherwise the
+    // interactive wizard runs so the user sees where it goes.
+    const useSilent = Boolean(silent) && canSilentInstall;
     installing = true;
     set({ status: 'installing' });
     const installer = state.downloadedFile;
-    log(`[updates] launching installer ${installer} and quitting.`);
-    // Give the renderer a beat to paint the "installing" state, then hand
-    // off to the NSIS installer (it removes the current copy first, so this
-    // works for upgrades AND downgrades) and quit.
+    const args = useSilent ? ['/S'] : [];
+    log(`[updates] launching installer ${installer}${useSilent ? ' silently (/S)' : ''} and quitting.`);
+    // Give the backend/agent time to exit so no file is locked when the
+    // installer runs (silent installs start at once; the wizard's clicks
+    // naturally buy the same time for interactive installs).
+    const quitDelayMs = useSilent ? 2500 : 800;
     setTimeout(() => {
       try {
-        const child = spawn(installer, [], { detached: true, stdio: 'ignore', windowsHide: false });
-        child.unref();
+        const child = spawnInstaller(installer, args, { detached: true, stdio: 'ignore', windowsHide: false });
+        if (child && typeof child.unref === 'function') child.unref();
       } catch (err) {
         installing = false;
         set({ status: 'error', error: `Could not launch the installer (${err instanceof Error ? err.message : err}).` });
         return;
       }
       app.quit();
-    }, 800);
+    }, quitDelayMs);
     return snapshot();
   }
 
@@ -337,6 +357,8 @@ function createUpdater({ app, shell, BrowserWindow, log = () => {} }) {
     setAuto,
     compareVersions,
     isInstalling: () => installing,
+    /** Test-only: seed downloaded state without a real download. */
+    _setTestState: (partial) => set({ ...(partial || {}) }),
   };
 }
 

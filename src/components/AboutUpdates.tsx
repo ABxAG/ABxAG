@@ -133,7 +133,7 @@ export function AboutUpdates({ app, onPatch }: { app: AppSettings | null; onPatc
   const installVersion = (version: string) => {
     if (!bridge) return;
     if (state.downloadedVersion === version) {
-      void run(() => bridge.install());
+      void run(() => bridge.install(false));
     } else {
       setConfirmSwitch(null);
       void run(() => bridge.download(version));
@@ -239,7 +239,7 @@ export function AboutUpdates({ app, onPatch }: { app: AppSettings | null; onPatc
                     <span>v{state.downloadedVersion} ready — installing restarts the app.</span>
                   </div>
                   <button type="button" disabled={busy}
-                    onClick={() => run(() => bridge!.install())}
+                    onClick={() => run(() => bridge!.install(false))}
                     className="shrink-0 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-[11px] font-medium text-emerald-100 hover:bg-emerald-500/30 disabled:opacity-50 cursor-pointer">
                     Install now
                   </button>
