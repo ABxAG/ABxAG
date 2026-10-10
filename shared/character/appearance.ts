@@ -106,7 +106,7 @@ const MATERIAL_RULES: Array<[RegExp, MaterialRoleName]> = [
   [/眼镜|眼鏡|メガネ|glasses|墨镜/i, "accessory"],
   // Fabric words first: "胸口布" (chest cloth) must not become a mouth
   // because it contains 口, nor "手套" (gloves) skin because it contains 手.
-  [/手套|布|裙|裤|褲|袖|袜|襪|鞋|靴|glove|cloth|dress|skirt|sleeve|sock|shoe|boot/i, "cloth"],
+  [/手套|手袋|布|裙|裤|褲|袖|袜|襪|鞋|靴|帽子|ドレス|スカート|シャツ|ズボン|パンツ|セーター|コート|ジャケット|ワンピース|水着|制服|パーカー|ネクタイ|リボン|靴下|ブラ|ショーツ|タイツ|ストッキング|上着|下着|glove|cloth|dress|skirt|sleeve|sock|shoe|boot|hat|shirt|pants|sweater|coat|jacket|uniform|hoodie|tie|ribbon|swimsuit/i, "cloth"],
   [/白目|眼白|eyewhite|sclera|eye_?white/i, "eyeWhite"],
   [/目光|ハイライト|highlight|eye_?hi|catchlight|星/i, "catchlight"],
   [/目影|眼影|eye_?shadow|二重影/i, "eyeShadow"],
@@ -119,7 +119,10 @@ const MATERIAL_RULES: Array<[RegExp, MaterialRoleName]> = [
   [/颜|顔|脸|臉|表情|face|フェイス|痣/i, "face"],
   [/前髮|前髪|前发|bangs|fringe/i, "frontHair"],
   [/髮|髪|发|hair|ヘア/i, "hair"],
-  [/肌|skin|皮肤|皮膚|身体|身體|^手\d*$|指甲|nail/i, "skin"],
+  // Body parts: without these, "腕" (arm), "足" (leg), "頭" (head) and friends
+  // match nothing and fall back to "cloth" — tinting the whole body with the
+  // outfit. English names are anchored so "charm"/"alarm" don't match "arm".
+  [/肌|skin|皮肤|皮膚|身体|身體|^手\d*$|指甲|nail|腕|肘|手首|足|脚|膝|頭|体|胴|首|肩|背|腹|尻|腰|耳|鼻|頬|指|爪|手臂|胳膊|腿|头|脖子|肩膀|胸|肚|腰|耳朵|鼻子|手指|脚趾|うで|あし|あたま|からだ|^(left|right)?(arm|elbow|wrist|hand|finger|leg|thigh|calf|knee|foot|feet|toe|head|neck|shoulder|torso|body|chest|bust|back|belly|waist|hip|butt|ear|nose)/i, "skin"],
   [/金属|metal|メタル/i, "metal"],
   [/宝石|珠宝|jewel|gem|结晶|crystal|水晶/i, "jewelry"],
   [/皮|leather|レザー/i, "leather"],
@@ -127,16 +130,66 @@ const MATERIAL_RULES: Array<[RegExp, MaterialRoleName]> = [
   [/衬衣|shirt|blouse|ブラウス/i, "lightCloth"],
 ];
 
+/** Clothing roles tintable by the outfit feature. */
+const OUTFIT_ROLES: ReadonlySet<MaterialRoleName> = new Set(["cloth", "lightCloth", "leather"]);
+
+/** Hair roles tintable by the outfit feature. */
+const HAIR_ROLES: ReadonlySet<MaterialRoleName> = new Set(["hair", "frontHair"]);
+
+/**
+ * Classify one material name with the built-in rules (no fallback: returns
+ * null when nothing matches, unlike mapMaterialRoles which says "cloth").
+ */
+export function classifyMaterialRole(name: string, englishName?: string): MaterialRoleName | null {
+  for (const [pattern, candidate] of MATERIAL_RULES) {
+    if (pattern.test(name) || (englishName && pattern.test(englishName))) return candidate;
+  }
+  return null;
+}
+
+/**
+ * May this material be outfit-tinted? Only when it is EXPLICITLY clothing:
+ * listed under a clothing role in the active (possibly user-overridden) map,
+ * or matched by a built-in clothing rule. Fallback-"cloth" body parts
+ * (unmatched names) are never tinted — that fallback exists for shading,
+ * and tinting it dyes the whole body.
+ */
+export function isOutfitTintable(
+  name: string,
+  activeRoles: Partial<Record<MaterialRoleName, string[]>> | undefined,
+  englishName?: string,
+): boolean {
+  return isRoleTintable(name, activeRoles, OUTFIT_ROLES, englishName);
+}
+
+/** Same guard for hair ("baal kaale karo" must not dye the dress). */
+export function isHairTintable(
+  name: string,
+  activeRoles: Partial<Record<MaterialRoleName, string[]>> | undefined,
+  englishName?: string,
+): boolean {
+  return isRoleTintable(name, activeRoles, HAIR_ROLES, englishName);
+}
+
+function isRoleTintable(
+  name: string,
+  activeRoles: Partial<Record<MaterialRoleName, string[]>> | undefined,
+  allowed: ReadonlySet<MaterialRoleName>,
+  englishName?: string,
+): boolean {
+  if (activeRoles) {
+    for (const [role, names] of Object.entries(activeRoles) as [MaterialRoleName, string[]][]) {
+      if (Array.isArray(names) && names.includes(name)) return allowed.has(role);
+    }
+  }
+  return allowed.has(classifyMaterialRole(name, englishName) ?? ("" as MaterialRoleName));
+}
+
 export function mapMaterialRoles(rig: RigDescription): Partial<Record<MaterialRoleName, string[]>> {
   const roles: Partial<Record<MaterialRoleName, string[]>> = {};
   for (const material of rig.materials) {
-    let role: MaterialRoleName = "cloth";
-    for (const [pattern, candidate] of MATERIAL_RULES) {
-      if (pattern.test(material.name) || (material.englishName && pattern.test(material.englishName))) {
-        role = candidate;
-        break;
-      }
-    }
+    // Unmatched names stay "cloth": the shading fallback the renderer relies on.
+    const role = classifyMaterialRole(material.name, material.englishName) ?? "cloth";
     (roles[role] ??= []).push(material.name);
   }
   return roles;

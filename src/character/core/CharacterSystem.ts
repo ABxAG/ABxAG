@@ -25,6 +25,7 @@ import { limitedTextureLoader, type QualityProfile } from './quality';
 import type { BasePose, CharacterConfig } from '../config/types';
 import type { CharacterProfile, BoneEntry } from '@/shared/character/profile';
 import { analyzeRig } from '@/shared/character/profile';
+import { isHairTintable, isOutfitTintable } from '@/shared/character/appearance';
 import type { PhysicsChainProfile, ColliderProfile } from '@/shared/character/secondary';
 import { loadPmx } from '../loaders/PmxLoader';
 import type { PmxModel } from '../loaders/pmxTypes';
@@ -1215,14 +1216,14 @@ export class CharacterSystem {
   }
 
   /**
-   * Tint her outfit / hair ("#e11d48", "red", null to reset). Only the
-   * clothing and hair material roles are touched; the change lives in
-   * memory (re-import restores the authored colours). PMX models only.
+   * Tint her outfit / hair ("#e11d48", "red", null to reset). ONLY materials
+   * explicitly classified as clothing/hair are touched — skin, face, eyes
+   * and unmapped parts are never tinted (that fallback exists for shading,
+   * and tinting it dyes the whole body). In-memory only. PMX models only.
    */
   setOutfitTint(tint: { cloth?: string | null; hair?: string | null }): boolean {
     const model = this.model;
     if (!model) return false;
-    const wants = new Map<string, THREE.Color | null>();
     const parse = (value: string | null | undefined): THREE.Color | null | undefined => {
       if (value === undefined) return undefined;
       if (value === null) return null;
@@ -1236,10 +1237,10 @@ export class CharacterSystem {
     const materials = model.mesh.material as THREE.Material[];
     let touched = 0;
     model.materials.forEach((info, i) => {
-      const role = this.materialRoles[i] ?? 'cloth';
+      const english = (info as { englishName?: string }).englishName;
       const target =
-        cloth !== undefined && (role === 'cloth' || role === 'lightCloth' || role === 'leather') ? cloth
-        : hair !== undefined && (role === 'hair' || role === 'frontHair') ? hair
+        cloth !== undefined && isOutfitTintable(info.name, this.config.materialRoles, english) ? cloth
+        : hair !== undefined && isHairTintable(info.name, this.config.materialRoles, english) ? hair
         : undefined;
       if (target === undefined) return;
       const mat = materials[i] as THREE.Material & { color?: THREE.Color };
