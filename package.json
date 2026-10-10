@@ -4,7 +4,7 @@
   "description": "ABxAG \u2014 a private 3D AI desktop companion powered by each user's own Gemini API key.",
   "author": "ABxAG",
   "private": true,
-  "version": "1.1.5",
+  "version": "1.1.6",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {

@@ -175,8 +175,16 @@ export class ABxAGAudioSession {
   private readonly voiceStartFrames = 2;
   private readonly voiceStopDelayMs = 500;
   private readonly bargeInGuardMs = 700;
-  private readonly bargeInStartFrames = 4;
+  /**
+   * Barge-in needs ~640 ms of SUSTAINED voice energy (10 frames × 64 ms).
+   * A cough or a breath is loud but short (<400 ms), so it never reaches
+   * this count and can no longer stop her mid-sentence. Genuine speech —
+   * "stop", "wait", a question — sustains well past it.
+   */
+  private readonly bargeInStartFrames = 10;
   private readonly bargeInVoiceThreshold = 0.045;
+  /** Settings → Voice → "let me interrupt" (loaded at connect; default on). */
+  private bargeInEnabled = true;
   
   // State Callbacks
   private onStateChange: (state: LiveState) => void;
@@ -313,6 +321,7 @@ export class ABxAGAudioSession {
             .then((s) => {
               const semitones = Number(s?.voice?.pitch) || 0;
               this.pitchShifter = semitones > 0 ? new PitchShifter(Math.pow(2, Math.min(5, semitones) / 12)) : null;
+              this.bargeInEnabled = s?.voice?.bargeIn !== false;
             })
             .catch(() => undefined);
 
@@ -541,6 +550,13 @@ export class ABxAGAudioSession {
       && this.outputSpeechStartedAt > 0
       && timestamp - this.outputSpeechStartedAt < this.bargeInGuardMs
     ) {
+      this.voiceFrames = 0;
+      return false;
+    }
+
+    // Barge-in disabled in settings: her speech is never interrupted and the
+    // mic stays muted while she talks (it re-opens the moment she stops).
+    if (abxagOutputActive && !this.bargeInEnabled) {
       this.voiceFrames = 0;
       return false;
     }

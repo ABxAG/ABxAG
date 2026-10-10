@@ -506,6 +506,7 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, appSettings
                         <Row label="Spoken task updates" description="What ABxAG says out loud while she works on your PC.">
                           <Choice label="Spoken task updates" value={app.voice.speakTaskUpdates} options={[["all", "Everything"], ["important", "Important"], ["none", "Nothing"]]} onChange={(v) => patch({ voice: { speakTaskUpdates: v } })} />
                         </Row>
+                        <ToggleRow label="Let me interrupt by talking" description="Talking over her stops her so you can jump in — coughs and breaths are too short to stop her. Used from the next time you connect." checked={app.voice.bargeIn ?? true} onChange={(v) => patch({ voice: { bargeIn: v } })} />
                       </Group>
                     )}
                     <Group title="Wake word & microphone">
