@@ -418,7 +418,7 @@ export class ABxAGRuntime {
    * "make your dress red"). Fanned out to every window over /events; the
    * main window performs it on the live CharacterSystem.
    */
-  characterCommand(command: { kind: "action"; action: string } | { kind: "switch"; id: string } | { kind: "outfit"; cloth?: string | null; hair?: string | null }): boolean {
+  characterCommand(command: { kind: "action"; action: string; target?: "stage" | "companion" | "both" } | { kind: "switch"; id: string } | { kind: "outfit"; cloth?: string | null; hair?: string | null; target?: "stage" | "companion" | "both" }): boolean {
     appEvents.publish("character.command", command);
     return true;
   }

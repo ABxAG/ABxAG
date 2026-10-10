@@ -23,7 +23,7 @@ export const LIVE_AGENT_INSTRUCTIONS = [
   "- 'Stop', 'ruk', 'bas', 'cancel' → controlTask(stop). 'Main karta hoon' / 'let me do it' → controlTask(take_over). 'Ab tum karo' → controlTask(return_control).",
   "- Alarms, timers, reminders: setReminder. Quiet requests: setDoNotDisturb or setProactivity. Contact aliases ('Papa is \"Papa ❤️\" on WhatsApp'): saveContact.",
   "- Your desktop companion body (the character on the user's desktop): 'idhar aao' / 'come here' → companionAction(come_here); 'icons wapas rakho' / 'put the icons back' / 'fix my icons' → companionAction(restore_icons); also sit, stand, stretch, wave, hide, play_with_icons. Say a short, playful line about it.",
-  "- Your MAIN 3D stage body (the big character in this window) moves on request: 'jump karo' / 'laaf dao' / 'wave karo' / 'dance karo' / 'bow down' / 'spin' / 'nod' / 'shrug' / 'stretch' → characterPerform(action). 'Character change karo' / 'dusri wali aao' → switchCharacter (no target = next one). 'Dress red karo' / 'baal kaale karo' → setOutfitColor(color, part). Always perform first via the tool, then say one short playful line — never describe the move instead of doing it.",
+  "- Your MAIN 3D stage body (the big character in this window) moves on request: 'jump karo' / 'laaf dao' / 'wave karo' / 'dance karo' / 'bow down' / 'spin' / 'nod' / 'shrug' / 'stretch' → characterPerform(action). 'Character change karo' / 'dusri wali aao' → switchCharacter (no target = next one). 'Dress red karo' / 'baal kaale karo' → setOutfitColor(color, part); add target companion to recolor only the desktop doll (e.g. 'companion ki dress blue karo'), target stage for only the main one — each keeps its own color. Always perform first via the tool, then say one short playful line — never describe the move instead of doing it.",
   "STYLE: Short tasks get short replies — 'Ho gaya.', 'Mil gaya.', 'Yeh wala?', 'Wait, WhatsApp login nahi hai.' Explain at length only when asked. Never claim an action happened unless the task engine reported it.",
 ].join("\n");
 
@@ -142,12 +142,13 @@ export const LIVE_AGENT_TOOL_DECLARATIONS = [
   },
   {
     name: "setOutfitColor",
-    description: "Recolor her clothes or hair live (e.g. dress red, black hair). Pass a hex color (#e11d48) or a plain name (red, blue, pink, black…). reset=true restores the authored colors.",
+    description: "Recolor her clothes or hair live (e.g. dress red, black hair). Pass a hex color (#e11d48) or a plain name (red, blue, pink, black…). reset=true restores the authored colors. target picks the main stage, the desktop-companion doll, or both (default both) — so each can keep its own color.",
     parameters: {
       type: Type.OBJECT,
       properties: {
         color: { type: Type.STRING, description: "Hex (#e11d48) or color name." },
         part: { type: Type.STRING, enum: ["outfit", "hair", "all"], description: "What to recolor (default outfit)." },
+        target: { type: Type.STRING, enum: ["stage", "companion", "both"], description: "Which doll to recolor (default both)." },
         reset: { type: Type.BOOLEAN, description: "True to restore original colors." },
       },
       required: [],
@@ -306,19 +307,21 @@ export async function handleLiveAgentTool(runtime: ABxAGRuntime, name: string, a
       return { ok: true, id: pick.id, name: pick.displayName, note: "She changes on the main stage right now. Say one short playful line." };
     }
     case "setOutfitColor": {
+      const targetRaw = String(args.target || "both").toLowerCase();
+      const target = targetRaw === "stage" || targetRaw === "companion" ? targetRaw : "both";
       if (args.reset === true) {
-        runtime.characterCommand({ kind: "outfit", cloth: null, hair: null });
-        return { ok: true, reset: true, note: "Her original colors are back. Say one short line." };
+        runtime.characterCommand({ kind: "outfit", cloth: null, hair: null, target });
+        return { ok: true, reset: true, target, note: "Her original colors are back. Say one short line." };
       }
       const hex = parseStageColor(String(args.color || ""));
       if (!hex) {
         return { ok: false, note: "Give a hex color (#e11d48) or a name like red, blue, pink, black, white, green, purple, yellow, orange." };
       }
       const part = String(args.part || "outfit").toLowerCase();
-      if (part === "hair") runtime.characterCommand({ kind: "outfit", hair: hex });
-      else if (part === "all") runtime.characterCommand({ kind: "outfit", cloth: hex, hair: hex });
-      else runtime.characterCommand({ kind: "outfit", cloth: hex });
-      return { ok: true, color: hex, part, note: "Her look changes on the main stage and the desktop companion right now. Say one short playful line." };
+      if (part === "hair") runtime.characterCommand({ kind: "outfit", hair: hex, target });
+      else if (part === "all") runtime.characterCommand({ kind: "outfit", cloth: hex, hair: hex, target });
+      else runtime.characterCommand({ kind: "outfit", cloth: hex, target });
+      return { ok: true, color: hex, part, target, note: "Her look changes right now. Say one short playful line." };
     }
     default:
       return { error: `Unknown tool ${name}` };

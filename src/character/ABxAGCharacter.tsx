@@ -9,7 +9,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Sparkles, TriangleAlert } from 'lucide-react';
 import { CharacterSystem } from './core/CharacterSystem';
-import { applyStageCommand, isStageCommand } from './applyStageCommand';
+import { applyStageCommand, isStageCommand, targetMatches } from './applyStageCommand';
 import { setCharacterRealism } from './materials/AnimeMaterial';
 import { NO_CHARACTER, resolveCharacter } from './config/registry';
 import { qualityProfile, reportGraphicsTrouble, withQuality } from './core/quality';
@@ -290,11 +290,13 @@ export const ABxAGCharacter: React.FC<ABxAGCharacterProps> = ({
 
   // Stage directions from voice/tools ("jump", "dress red", …) via
   // useAppEvents → window event. Switches are handled by the host App.
+  // Commands targeted at the companion doll are ignored here.
   useEffect(() => {
     const onCommand = (event: Event) => {
       const system = systemRef.current;
       const cmd = (event as CustomEvent).detail as unknown;
-      if (isStageCommand(cmd)) applyStageCommand(system, cmd);
+      if (!isStageCommand(cmd) || !targetMatches(cmd, 'stage')) return;
+      applyStageCommand(system, cmd);
     };
     window.addEventListener('abxag:character-command', onCommand);
     return () => window.removeEventListener('abxag:character-command', onCommand);

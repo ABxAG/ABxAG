@@ -7,7 +7,7 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { applyStageCommand, isStageCommand } from "../src/character/applyStageCommand";
+import { applyStageCommand, isStageCommand, targetMatches } from "../src/character/applyStageCommand";
 
 function fakeSystem() {
   const calls: Array<{ method: string; args: unknown }> = [];
@@ -51,4 +51,13 @@ test("outfit commands reach setOutfitTint with cloth/hair/reset", () => {
 test("missing system never throws", () => {
   assert.equal(applyStageCommand(null, { kind: "action", action: "jump" }), false);
   assert.equal(applyStageCommand(undefined, { kind: "outfit", cloth: "#fff" }), false);
+});
+
+test("target routing: missing means both, stage/companion filter", () => {
+  assert.equal(targetMatches({ kind: "outfit", cloth: "#e11d48" }, "stage"), true);
+  assert.equal(targetMatches({ kind: "outfit", cloth: "#e11d48" }, "companion"), true);
+  assert.equal(targetMatches({ kind: "outfit", cloth: "#e11d48", target: "both" }, "stage"), true);
+  assert.equal(targetMatches({ kind: "outfit", cloth: "#2563eb", target: "companion" }, "stage"), false);
+  assert.equal(targetMatches({ kind: "outfit", cloth: "#2563eb", target: "companion" }, "companion"), true);
+  assert.equal(targetMatches({ kind: "action", action: "wave", target: "stage" }, "companion"), false);
 });

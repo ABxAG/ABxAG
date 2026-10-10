@@ -9,8 +9,16 @@
  */
 
 export type StageCommand =
-  | { kind: 'action'; action: string }
-  | { kind: 'outfit'; cloth?: string | null; hair?: string | null };
+  | { kind: 'action'; action: string; target?: StageTarget }
+  | { kind: 'outfit'; cloth?: string | null; hair?: string | null; target?: StageTarget };
+
+/** Which doll(s) a command is for. Missing = both (previous behaviour). */
+export type StageTarget = 'stage' | 'companion' | 'both';
+
+export function targetMatches(cmd: StageCommand | { target?: StageTarget }, side: 'stage' | 'companion'): boolean {
+  const target = cmd.target ?? 'both';
+  return target === 'both' || target === side;
+}
 
 export function isStageCommand(value: unknown): value is StageCommand {
   if (!value || typeof value !== 'object') return false;
