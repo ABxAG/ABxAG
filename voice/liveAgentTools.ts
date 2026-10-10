@@ -318,7 +318,7 @@ export async function handleLiveAgentTool(runtime: ABxAGRuntime, name: string, a
       if (part === "hair") runtime.characterCommand({ kind: "outfit", hair: hex });
       else if (part === "all") runtime.characterCommand({ kind: "outfit", cloth: hex, hair: hex });
       else runtime.characterCommand({ kind: "outfit", cloth: hex });
-      return { ok: true, color: hex, part, note: "Her look changes on the main stage right now. Say one short playful line." };
+      return { ok: true, color: hex, part, note: "Her look changes on the main stage and the desktop companion right now. Say one short playful line." };
     }
     default:
       return { error: `Unknown tool ${name}` };

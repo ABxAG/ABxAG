@@ -15,6 +15,7 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { ABxAGCharacter } from '../character/ABxAGCharacter';
+import { applyStageCommand, isStageCommand } from '../character/applyStageCommand';
 import type { CharacterSystem } from '../character/core/CharacterSystem';
 import type { CharacterActivity } from '../character/behaviour/behaviours';
 import { CompanionActor, type ActorCommand, type ActorMetrics } from './CompanionActor';
@@ -100,6 +101,13 @@ export const CompanionApp: React.FC = () => {
       }
       if (data.emotion) setEmotion(data.emotion);
       if (data.characterId && data.characterId !== characterId) setCharacterId(data.characterId);
+      // Stage directions from voice/tools ("jump", "dress red", …): the doll
+      // performs and retints in sync with the main window's character.
+      if (isStageCommand(data.command)) {
+        if (applyStageCommand(systemRef.current, data.command) && data.command.kind === 'action') {
+          react('happy', 1800);
+        }
+      }
     };
     return () => channel.close();
   }, [characterId]);

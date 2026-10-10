@@ -23,6 +23,18 @@ export interface QuestionEvent {
   options: string[];
 }
 
+/** Shared companion-sync channel (also used by ABxAGCoreVisualizer). */
+let companionChannel: BroadcastChannel | null = null;
+function postToCompanion(message: unknown): void {
+  try {
+    if (typeof BroadcastChannel === "undefined") return;
+    if (!companionChannel) companionChannel = new BroadcastChannel("abxag-character-state");
+    companionChannel.postMessage(message);
+  } catch {
+    /* broadcast unavailable */
+  }
+}
+
 export interface AppEventsState {
   connected: boolean;
   tasks: Record<string, TaskView>;
@@ -117,12 +129,15 @@ export function useAppEvents(enabled = true): AppEventsState {
           case "character.command": {
             // Stage direction for the live 3D character (and App, for
             // switches). Re-emitted as a window event so ABxAGCharacter and
-            // App can each take their part without prop drilling.
+            // App can each take their part without prop drilling, and echoed
+            // over BroadcastChannel so the desktop-companion doll (separate
+            // window, own CharacterSystem) performs/retints in sync.
             try {
               window.dispatchEvent(new CustomEvent("abxag:character-command", { detail: payload }));
             } catch {
               /* headless test env */
             }
+            postToCompanion({ command: payload });
             return s;
           }
           default:

@@ -9,6 +9,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Sparkles, TriangleAlert } from 'lucide-react';
 import { CharacterSystem } from './core/CharacterSystem';
+import { applyStageCommand, isStageCommand } from './applyStageCommand';
 import { setCharacterRealism } from './materials/AnimeMaterial';
 import { NO_CHARACTER, resolveCharacter } from './config/registry';
 import { qualityProfile, reportGraphicsTrouble, withQuality } from './core/quality';
@@ -292,14 +293,8 @@ export const ABxAGCharacter: React.FC<ABxAGCharacterProps> = ({
   useEffect(() => {
     const onCommand = (event: Event) => {
       const system = systemRef.current;
-      if (!system) return;
-      const cmd = (event as CustomEvent).detail as
-        | { kind: 'action'; action: string }
-        | { kind: 'outfit'; cloth?: string | null; hair?: string | null }
-        | undefined;
-      if (!cmd) return;
-      if (cmd.kind === 'action') system.performAction(cmd.action);
-      else if (cmd.kind === 'outfit') system.setOutfitTint({ cloth: cmd.cloth, hair: cmd.hair });
+      const cmd = (event as CustomEvent).detail as unknown;
+      if (isStageCommand(cmd)) applyStageCommand(system, cmd);
     };
     window.addEventListener('abxag:character-command', onCommand);
     return () => window.removeEventListener('abxag:character-command', onCommand);
