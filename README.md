@@ -1,4 +1,4 @@
-# ABxAG 1.1.6 — source code
+# ABxAG 1.1.7 — source code
 
 ABxAG is a 3D AI companion for Windows: she talks with you by voice (Google Gemini Live),
 can see your screen when you allow it, controls apps and files on your PC, and lives on your
