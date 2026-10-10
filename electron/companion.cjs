@@ -277,6 +277,7 @@ class CompanionManager {
       fullscreenable: false,
       backgroundColor: '#00000000',
       title: 'ABxAG companion',
+      ...(this.options.icon ? { icon: this.options.icon } : {}),
       webPreferences: {
         preload: this.options.preload,
         contextIsolation: true,

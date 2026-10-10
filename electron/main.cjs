@@ -80,7 +80,19 @@ const APP_ROOT = app.isPackaged
   : path.join(__dirname, '..');
 
 const SERVER_ENTRY = path.join(APP_ROOT, 'dist', 'server.cjs');
-const APP_ICON = path.join(APP_ROOT, 'build', 'icon.png');
+// Window/tray icon: prefer the PNG, fall back to the ICO. If neither exists
+// Electron silently uses its own default icon (the "wrong logo" bug), so
+// resolve loudly here instead of failing quietly at every window.
+let APP_ICON = path.join(APP_ROOT, 'build', 'icon.png');
+if (!fs.existsSync(APP_ICON)) {
+  const fallback = path.join(APP_ROOT, 'build', 'icon.ico');
+  if (fs.existsSync(fallback)) {
+    console.warn('[shell] build/icon.png missing, using build/icon.ico for windows/tray.');
+    APP_ICON = fallback;
+  } else {
+    console.warn('[shell] no app icon found under build/ — windows will show the default Electron icon!');
+  }
+}
 
 /** @type {import('child_process').ChildProcess | null} */
 let serverProcess = null;
@@ -802,6 +814,7 @@ function startShell() {
   companion = new CompanionManager({
     origin: SERVER_ORIGIN,
     preload: path.join(__dirname, 'preload.cjs'),
+    icon: APP_ICON,
     dataDir: app.getPath('userData'),
     backend: backendRequest,
     onMenusChanged: updateTrayMenu,

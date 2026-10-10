@@ -1,7 +1,7 @@
 {
   "name": "abxag",
   "productName": "ABxAG",
-  "description": "ABxAG \u2014 a private 3D AI desktop companion powered by each user's own Gemini API key.",
+  "description": "ABxAG — a private 3D AI desktop companion powered by each user's own Gemini API key.",
   "author": "ABxAG",
   "private": true,
   "version": "1.1.7",
@@ -55,12 +55,10 @@
     "electron": "^43.1.0",
     "electron-builder": "^26.15.3",
     "esbuild": "^0.25.0",
+    "rcedit": "^5.0.2",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.3"
   }
 }
-
-
-
