@@ -28,6 +28,7 @@ import { analyzeRig } from '@/shared/character/profile';
 import type { PhysicsChainProfile, ColliderProfile } from '@/shared/character/secondary';
 import { loadPmx } from '../loaders/PmxLoader';
 import type { PmxModel } from '../loaders/pmxTypes';
+import { CHARACTER_ACTIONS, CharacterActions, normalizeActionName, type CharacterActionName } from '../animation/CharacterActions';
 import {
   detectGenericFormat,
   loadGenericModel,
@@ -123,6 +124,13 @@ export class CharacterSystem {
   private physicsDebug: THREE.Group | null = null;
   private characterRoot: THREE.Group | null = null;
   private behaviours: BehaviourDirector | null = null;
+  /** One-shot body performances (jump/wave/…); idle/gaze breathe underneath. */
+  private readonly actions = new CharacterActions();
+  private lastActionRoot = { y: 0, yaw: 0 };
+  /** Material role per PMX material index (for outfit tinting). */
+  private materialRoles: string[] = [];
+  /** Original diffuse colours, stashed on first tint (for reset). */
+  private readonly originalColors = new Map<number, THREE.Color>();
   private readonly lipSync: LipSync;
   /** Current seat, its prop, and the seated idle's state. */
   private seating: {
@@ -314,6 +322,7 @@ export class CharacterSystem {
         behaviour: this.behaviours?.currentName ?? null,
         expression: this.face?.expression ?? null,
         gaze: this.gaze?.currentMode ?? null,
+        action: this.actions.active,
       };
     }
     return {
@@ -331,6 +340,7 @@ export class CharacterSystem {
       behaviour: this.behaviours?.currentName ?? null,
       expression: this.face?.expression ?? null,
       gaze: this.gaze?.currentMode ?? null,
+      action: this.actions.active,
     };
   }
 
@@ -471,6 +481,7 @@ export class CharacterSystem {
         if (index !== undefined) chainBones.add(index);
       }
       const roleOf = (materialIndex: number) => resolveMaterialRole(model.materials[materialIndex].name, this.config.materialRoles);
+      this.materialRoles = model.materials.map((info) => roleOf(info.index));
       try {
         // Low quality skips vertex cloth entirely (bone physics still sways).
         this.cloth = this.quality && !this.quality.cloth ? null : ClothLayer.build(model, roleOf, this.physics.worldCapsules(), analysis.height, chainBones);
@@ -1016,6 +1027,15 @@ export class CharacterSystem {
       }
     }
 
+    // One-shot body performances (jump/wave/…): full-body overrides that
+    // compose over idle, so she keeps breathing mid-action.
+    try {
+      this.actions.update(delta, pose, this.config.bones);
+    } catch (error) {
+      console.warn('[CharacterSystem] action layer failed:', error);
+      this.actions.stop();
+    }
+
     gaze.setEmotion(input.emotion);
 
     if (this.eyeTracking) {
@@ -1070,6 +1090,16 @@ export class CharacterSystem {
       }
     }
     pose.apply();
+
+    // One-shot root motion (hop height, spin yaw): applied as a delta each
+    // frame so it composes with seating/grounding and nets to zero at rest.
+    if (this.characterRoot && (this.actions.root.y !== 0 || this.actions.root.yaw !== 0 || this.lastActionRoot.y !== 0 || this.lastActionRoot.yaw !== 0)) {
+      const scale = this.config.scale || 1;
+      this.characterRoot.position.y += (this.actions.root.y - this.lastActionRoot.y) * scale;
+      this.characterRoot.rotation.y += this.actions.root.yaw - this.lastActionRoot.yaw;
+      this.lastActionRoot.y = this.actions.root.y;
+      this.lastActionRoot.yaw = this.actions.root.yaw;
+    }
 
     // ---- 6. face ----------------------------------------------------------
     const targetExpression =
@@ -1142,6 +1172,89 @@ export class CharacterSystem {
 
   get root(): THREE.Group | null {
     return this.characterRoot;
+  }
+
+  /** Names of the body actions she can perform on request. */
+  get supportedActions(): readonly CharacterActionName[] {
+    return CHARACTER_ACTIONS;
+  }
+
+  /** Currently running one-shot action, if any. */
+  get currentAction(): CharacterActionName | null {
+    return this.actions.active;
+  }
+
+  /**
+   * Perform a body action ("jump", "wave", …). A new action replaces a
+   * running one. Returns the canonical name, or null for unknown words.
+   */
+  performAction(raw: string): CharacterActionName | null {
+    // Bone-driven performances need the PMX pose buffer; other models get a
+    // null so the caller can say so honestly instead of faking it.
+    if (!this.model || !this.pose) return null;
+    // A replaced mid-hop action must not leave its root offset behind.
+    this.revertActionRoot();
+    const started = this.actions.perform(raw);
+    return started;
+  }
+
+  stopAction(): void {
+    this.actions.stop();
+    this.revertActionRoot();
+  }
+
+  /** Return any applied hop/spin offset to the character root. */
+  private revertActionRoot(): void {
+    if (this.characterRoot && (this.lastActionRoot.y !== 0 || this.lastActionRoot.yaw !== 0)) {
+      const scale = this.config.scale || 1;
+      this.characterRoot.position.y -= this.lastActionRoot.y * scale;
+      this.characterRoot.rotation.y -= this.lastActionRoot.yaw;
+    }
+    this.lastActionRoot.y = 0;
+    this.lastActionRoot.yaw = 0;
+  }
+
+  /**
+   * Tint her outfit / hair ("#e11d48", "red", null to reset). Only the
+   * clothing and hair material roles are touched; the change lives in
+   * memory (re-import restores the authored colours). PMX models only.
+   */
+  setOutfitTint(tint: { cloth?: string | null; hair?: string | null }): boolean {
+    const model = this.model;
+    if (!model) return false;
+    const wants = new Map<string, THREE.Color | null>();
+    const parse = (value: string | null | undefined): THREE.Color | null | undefined => {
+      if (value === undefined) return undefined;
+      if (value === null) return null;
+      const hex = /^#?([0-9a-f]{6})$/i.exec(value.trim());
+      if (!hex) return undefined;
+      return new THREE.Color(`#${hex[1]}`);
+    };
+    const cloth = parse(tint.cloth);
+    const hair = parse(tint.hair);
+    if (cloth === undefined && hair === undefined) return false;
+    const materials = model.mesh.material as THREE.Material[];
+    let touched = 0;
+    model.materials.forEach((info, i) => {
+      const role = this.materialRoles[i] ?? 'cloth';
+      const target =
+        cloth !== undefined && (role === 'cloth' || role === 'lightCloth' || role === 'leather') ? cloth
+        : hair !== undefined && (role === 'hair' || role === 'frontHair') ? hair
+        : undefined;
+      if (target === undefined) return;
+      const mat = materials[i] as THREE.Material & { color?: THREE.Color };
+      if (!mat || !mat.color) return;
+      if (!this.originalColors.has(i)) this.originalColors.set(i, mat.color.clone());
+      if (target === null) {
+        const original = this.originalColors.get(i);
+        if (original) mat.color.copy(original);
+      } else {
+        const original = this.originalColors.get(i) ?? mat.color;
+        mat.color.copy(original).multiply(target);
+      }
+      touched += 1;
+    });
+    return touched > 0;
   }
 
   get secondaryMotion(): SecondaryMotion | null {

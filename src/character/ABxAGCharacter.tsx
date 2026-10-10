@@ -287,6 +287,24 @@ export const ABxAGCharacter: React.FC<ABxAGCharacterProps> = ({
     return () => window.removeEventListener('abxag:app-settings', onSettings);
   }, []);
 
+  // Stage directions from voice/tools ("jump", "dress red", …) via
+  // useAppEvents → window event. Switches are handled by the host App.
+  useEffect(() => {
+    const onCommand = (event: Event) => {
+      const system = systemRef.current;
+      if (!system) return;
+      const cmd = (event as CustomEvent).detail as
+        | { kind: 'action'; action: string }
+        | { kind: 'outfit'; cloth?: string | null; hair?: string | null }
+        | undefined;
+      if (!cmd) return;
+      if (cmd.kind === 'action') system.performAction(cmd.action);
+      else if (cmd.kind === 'outfit') system.setOutfitTint({ cloth: cmd.cloth, hair: cmd.hair });
+    };
+    window.addEventListener('abxag:character-command', onCommand);
+    return () => window.removeEventListener('abxag:character-command', onCommand);
+  }, []);
+
   // ---- grab her clothes ----------------------------------------------------
   // Press on the fabric and drag: the cloth is pulled (within its slack - it
   // stays on her) and swings back when released.

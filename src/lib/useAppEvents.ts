@@ -114,6 +114,17 @@ export function useAppEvents(enabled = true): AppEventsState {
             const p = payload as { reason: string; tasks: number };
             return { ...s, stopped: { reason: p.reason, tasks: p.tasks, at: Date.now() } };
           }
+          case "character.command": {
+            // Stage direction for the live 3D character (and App, for
+            // switches). Re-emitted as a window event so ABxAGCharacter and
+            // App can each take their part without prop drilling.
+            try {
+              window.dispatchEvent(new CustomEvent("abxag:character-command", { detail: payload }));
+            } catch {
+              /* headless test env */
+            }
+            return s;
+          }
           default:
             return s;
         }

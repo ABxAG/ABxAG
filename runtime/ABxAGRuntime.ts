@@ -413,6 +413,16 @@ export class ABxAGRuntime {
     return true;
   }
 
+  /**
+   * Direct the main-stage 3D character (voice: "jump", "change character",
+   * "make your dress red"). Fanned out to every window over /events; the
+   * main window performs it on the live CharacterSystem.
+   */
+  characterCommand(command: { kind: "action"; action: string } | { kind: "switch"; id: string } | { kind: "outfit"; cloth?: string | null; hair?: string | null }): boolean {
+    appEvents.publish("character.command", command);
+    return true;
+  }
+
   private notify(title: string, body: string): void {
     appEvents.publish("notification", { id: `${Date.now()}`, title, body });
     this.options.sendToShell?.({ type: "notify", title, body });

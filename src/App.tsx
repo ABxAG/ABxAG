@@ -28,6 +28,8 @@ import { MemoryDashboard } from "./components/MemoryDashboard";
 import { SettingsPanel, type SettingsSection } from "./components/SettingsPanel";
 import { TaskHud } from "./components/TaskHud";
 import { UpdatePrompt } from "./components/UpdatePrompt";
+import { useCharacterAutonomy } from "./lib/useCharacterAutonomy";
+import { TERMINAL_TASK_STATES } from "./lib/appApi";
 import { ModelChip } from "./components/ModelSelector";
 import { Onboarding } from "./components/Onboarding";
 import { api, type AppSettings, type AppSettingsPatch } from "./lib/appApi";
@@ -327,8 +329,31 @@ export default function App() {
       if (s && !s.onboardingComplete) setShowOnboarding(true);
     });
     const bridge = (window as unknown as { abxag?: { onOpenStudio?: (cb: () => void) => () => void } }).abxag;
-    return bridge?.onOpenStudio?.(() => setShowStudio(true));
+    const offStudio = bridge?.onOpenStudio?.(() => setShowStudio(true));
+    // Voice/tool character switches ("change character"): the server already
+    // persisted the new active id; apply it live here.
+    const onCharacterCommand = (event: Event) => {
+      const cmd = (event as CustomEvent).detail as { kind?: string; id?: string } | undefined;
+      if (cmd?.kind === "switch" && typeof cmd.id === "string" && /^[a-z0-9_-]{1,64}$/.test(cmd.id)) {
+        setActiveCharacterId(cmd.id);
+      }
+    };
+    window.addEventListener("abxag:character-command", onCharacterCommand);
+    return () => {
+      offStudio?.();
+      window.removeEventListener("abxag:character-command", onCharacterCommand);
+    };
   }, []);
+  // She changes her own character when long idle (capped; never mid-talk/task/panel).
+  useCharacterAutonomy({
+    enabled: true,
+    currentId: activeCharacterId,
+    canSwitchNow: () =>
+      state === "disconnected" &&
+      !showSettings && !showStudio && !showOnboarding && !showMemoryDashboard &&
+      !Object.values(events.tasks).some((t) => !TERMINAL_TASK_STATES.has(t.state)),
+    onSwitch: (id) => handleAppSettingsChange({ character: { activeCharacterId: id } }),
+  });
   // Realism and cloth settings apply live to the character in this window.
   const realism = appSettings?.graphics?.realism;
   useEffect(() => {

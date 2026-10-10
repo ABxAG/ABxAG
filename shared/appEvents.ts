@@ -21,6 +21,7 @@ export type AppEventType =
   | "notification"
   | "utility.fired"
   | "character.cue"
+  | "character.command"
   | "autonomy.stopped"
   | "dnd.changed"
   | "speech.say"
