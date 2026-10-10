@@ -9,8 +9,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { normalizeStageAction, parseStageColor, STAGE_ACTIONS } from "../voice/liveAgentTools";
 
-test("stage actions cover the nine supported moves", () => {
-  assert.deepEqual([...STAGE_ACTIONS], ["jump", "wave", "bow", "spin", "nod", "shake_head", "shrug", "dance", "stretch"]);
+test("stage actions cover the ten supported moves", () => {
+  assert.deepEqual([...STAGE_ACTIONS], ["jump", "wave", "bow", "spin", "nod", "shake_head", "shrug", "dance", "stretch", "backflip"]);
 });
 
 test("normalizeStageAction accepts actions, aliases and Hindi words", () => {
@@ -20,6 +20,9 @@ test("normalizeStageAction accepts actions, aliases and Hindi words", () => {
   assert.equal(normalizeStageAction("hi"), "wave");
   assert.equal(normalizeStageAction("laaf"), "jump");
   assert.equal(normalizeStageAction("no"), "shake_head");
+  assert.equal(normalizeStageAction("backflip"), "backflip");
+  assert.equal(normalizeStageAction("flip"), "backflip");
+  assert.equal(normalizeStageAction("somersault"), "backflip");
 });
 
 test("normalizeStageAction rejects the impossible", () => {

@@ -1352,6 +1352,13 @@ class CompanionManager {
 
   /** Commands from the backend (voice / chat: "come here", "put the icons back"). */
   handleCommand(command) {
+    // Full body control: "perform:<action>" (jump/wave/dance/backflip/…)
+    // goes straight to the doll's character system.
+    if (typeof command === 'string' && command.startsWith('perform:')) {
+      const name = command.slice('perform:'.length).trim();
+      if (name) this.command({ act: 'perform', name });
+      return;
+    }
     switch (command) {
       case 'come_here':
         this.summon();

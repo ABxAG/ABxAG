@@ -39,10 +39,10 @@ module.exports = async function afterPack(context) {
     'file-version': version4,
     'product-version': version4,
     'version-string': {
-      CompanyName: 'ABsUP',
+      CompanyName: 'ABxAG',
       FileDescription: 'ABxAG',
       ProductName: 'ABxAG',
-      LegalCopyright: 'Copyright © 2026 ABsUP',
+      LegalCopyright: 'Copyright © 2026 ABxAG',
       OriginalFilename: `${productName}-runtime.exe`,
     },
     icon: iconIco,

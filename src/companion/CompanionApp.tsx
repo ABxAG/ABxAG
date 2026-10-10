@@ -15,6 +15,8 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { ABxAGCharacter } from '../character/ABxAGCharacter';
+import { normalizeActionName } from '../character/animation/CharacterActions';
+import { mapCompanionStringCommand } from './companionCommands';
 import { applyStageCommand, isStageCommand, targetMatches } from '../character/applyStageCommand';
 import type { CharacterSystem } from '../character/core/CharacterSystem';
 import type { CharacterActivity } from '../character/behaviour/behaviours';
@@ -158,10 +160,19 @@ export const CompanionApp: React.FC = () => {
       bridge.on('companion:command', (command: string | ActorCommand) => {
         const actor = actorRef.current;
         if (!actor) return;
-        const cmd: ActorCommand | null = typeof command === 'string'
-          ? command === 'sit' ? { act: 'sit' } : command === 'stand' ? { act: 'stand' } : command === 'wave' ? { act: 'perform', name: 'wave' } : null
+        const cmd: ActorCommand | { act: 'perform'; name: string } | null = typeof command === 'string'
+          ? mapCompanionStringCommand(command)
           : command;
         if (!cmd) return;
+        // Full body control: any stage action (dance/backflip/…) plays on
+        // the doll's own character system; legacy actor names keep old path.
+        if (cmd.act === 'perform') {
+          const stageAction = normalizeActionName(cmd.name);
+          if (stageAction && systemRef.current?.performAction(stageAction)) {
+            react(cmd.name === 'wave' ? 'happy' : 'playful', 1800);
+            return;
+          }
+        }
         if (cmd.act === 'perform' && cmd.name === 'wave') react('happy', 1800);
         actor.handle(cmd);
         setShadow((s) => ({ ...s, visible: cmd.act === 'sit' || cmd.act === 'peek' ? false : cmd.act === 'stand' || cmd.act === 'release' || cmd.act === 'walk' ? true : s.visible }));

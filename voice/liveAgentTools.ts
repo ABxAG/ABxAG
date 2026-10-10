@@ -23,7 +23,7 @@ export const LIVE_AGENT_INSTRUCTIONS = [
   "- 'Stop', 'ruk', 'bas', 'cancel' → controlTask(stop). 'Main karta hoon' / 'let me do it' → controlTask(take_over). 'Ab tum karo' → controlTask(return_control).",
   "- Alarms, timers, reminders: setReminder. Quiet requests: setDoNotDisturb or setProactivity. Contact aliases ('Papa is \"Papa ❤️\" on WhatsApp'): saveContact.",
   "- Your desktop companion body (the character on the user's desktop): 'idhar aao' / 'come here' → companionAction(come_here); 'icons wapas rakho' / 'put the icons back' / 'fix my icons' → companionAction(restore_icons); also sit, stand, stretch, wave, hide, play_with_icons. Say a short, playful line about it.",
-  "- Your MAIN 3D stage body (the big character in this window) moves on request: 'jump karo' / 'laaf dao' / 'wave karo' / 'dance karo' / 'bow down' / 'spin' / 'nod' / 'shrug' / 'stretch' → characterPerform(action). 'Character change karo' / 'dusri wali aao' → switchCharacter (no target = next one). 'Dress red karo' / 'baal kaale karo' → setOutfitColor(color, part); add target companion to recolor only the desktop doll (e.g. 'companion ki dress blue karo'), target stage for only the main one — each keeps its own color. Always perform first via the tool, then say one short playful line — never describe the move instead of doing it.",
+  "- Your MAIN 3D stage body (the big character in this window) moves on request: 'jump karo' / 'laaf dao' / 'dance karo' / 'bow down' / 'spin' / 'nod' / 'shrug' / 'stretch' / 'backflip' / 'dickbaazi karo' → characterPerform(action). 'Character change karo' / 'dusri wali aao' → switchCharacter (no target = next one). 'Dress red karo' / 'baal kaale karo' → setOutfitColor(color, part); add target companion to recolor only the desktop doll (e.g. 'companion ki dress blue karo'), target stage for only the main one — each keeps its own color. The DESKTOP-COMPANION doll obeys the same moves: 'doll dance karo' / 'putul ta nacho' / 'companion backflip karo' → companionPerform(action). Always perform first via the tool, then say one short playful line — never describe the move instead of doing it.",
   "STYLE: Short tasks get short replies — 'Ho gaya.', 'Mil gaya.', 'Yeh wala?', 'Wait, WhatsApp login nahi hai.' Explain at length only when asked. Never claim an action happened unless the task engine reported it.",
 ].join("\n");
 
@@ -121,10 +121,19 @@ export const LIVE_AGENT_TOOL_DECLARATIONS = [
   },
   {
     name: "characterPerform",
-    description: "Make the MAIN 3D character in this window perform a body move right now: jump, wave, bow, spin, nod, shake_head, shrug, dance, stretch. Call it first, then say one short playful line.",
+    description: "Make the MAIN 3D character in this window perform a body move right now: jump, wave, bow, spin, nod, shake_head, shrug, dance, stretch, backflip. Call it first, then say one short playful line.",
     parameters: {
       type: Type.OBJECT,
-      properties: { action: { type: Type.STRING, description: "One of: jump, wave, bow, spin, nod, shake_head, shrug, dance, stretch." } },
+      properties: { action: { type: Type.STRING, description: "One of: jump, wave, bow, spin, nod, shake_head, shrug, dance, stretch, backflip." } },
+      required: ["action"],
+    },
+  },
+  {
+    name: "companionPerform",
+    description: "Make the DESKTOP-COMPANION doll (her small character on the user's desktop) perform a body move right now: jump, wave, bow, spin, nod, shake_head, shrug, dance, stretch, backflip. Full control, same moves as the main stage. Call it first, then say one short playful line.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: { action: { type: Type.STRING, description: "One of: jump, wave, bow, spin, nod, shake_head, shrug, dance, stretch, backflip." } },
       required: ["action"],
     },
   },
@@ -159,7 +168,7 @@ export const LIVE_AGENT_TOOL_DECLARATIONS = [
 export const LIVE_AGENT_TOOL_NAMES = new Set(LIVE_AGENT_TOOL_DECLARATIONS.map((tool) => tool.name));
 
 /** Stage body moves the main 3D character can perform (mirrors the renderer's CharacterActions). */
-export const STAGE_ACTIONS = ["jump", "wave", "bow", "spin", "nod", "shake_head", "shrug", "dance", "stretch"] as const;
+export const STAGE_ACTIONS = ["jump", "wave", "bow", "spin", "nod", "shake_head", "shrug", "dance", "stretch", "backflip"] as const;
 export type StageAction = (typeof STAGE_ACTIONS)[number];
 
 export function normalizeStageAction(raw: string): StageAction | null {
@@ -172,6 +181,7 @@ export function normalizeStageAction(raw: string): StageAction | null {
     nod: "nod", yes: "nod",
     shake_head: "shake_head", no: "shake_head",
     shrug: "shrug", dance: "dance", stretch: "stretch",
+    backflip: "backflip", flip: "backflip", somersault: "backflip",
   };
   if ((STAGE_ACTIONS as readonly string[]).includes(key)) return key as StageAction;
   return aliases[key] ?? null;
@@ -282,6 +292,16 @@ export async function handleLiveAgentTool(runtime: ABxAGRuntime, name: string, a
       }
       runtime.characterCommand({ kind: "action", action: name });
       return { ok: true, action: name, note: "She performs it on the main stage right now. Say one short playful line." };
+    }
+    case "companionPerform": {
+      const name = normalizeStageAction(String(args.action || ""));
+      if (!name) {
+        return { ok: false, note: `The doll can do: ${STAGE_ACTIONS.join(", ")}. Ask for one of those.` };
+      }
+      const settings = runtime.settings.get();
+      if (!settings.companion.enabled) return { ok: false, note: "The desktop companion is turned off (Settings → Character & companion)." };
+      runtime.companionCommand(`perform:${name}`);
+      return { ok: true, action: name, note: "The desktop-companion doll performs it right now. Say one short playful line." };
     }
     case "switchCharacter": {
       const profiles = await runtime.characters.list();

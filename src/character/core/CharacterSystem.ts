@@ -127,7 +127,7 @@ export class CharacterSystem {
   private behaviours: BehaviourDirector | null = null;
   /** One-shot body performances (jump/wave/…); idle/gaze breathe underneath. */
   private readonly actions = new CharacterActions();
-  private lastActionRoot = { y: 0, yaw: 0 };
+  private lastActionRoot = { y: 0, yaw: 0, pitch: 0 };
   /** Material role per PMX material index (for outfit tinting). */
   private materialRoles: string[] = [];
   /** Original diffuse colours, stashed on first tint (for reset). */
@@ -1092,14 +1092,17 @@ export class CharacterSystem {
     }
     pose.apply();
 
-    // One-shot root motion (hop height, spin yaw): applied as a delta each
-    // frame so it composes with seating/grounding and nets to zero at rest.
-    if (this.characterRoot && (this.actions.root.y !== 0 || this.actions.root.yaw !== 0 || this.lastActionRoot.y !== 0 || this.lastActionRoot.yaw !== 0)) {
+    // One-shot root motion (hop height, spin yaw, flip pitch): applied as a
+    // delta each frame so it composes with seating/grounding and nets to
+    // zero at rest.
+    if (this.characterRoot && (this.actions.root.y !== 0 || this.actions.root.yaw !== 0 || this.actions.root.pitch !== 0 || this.lastActionRoot.y !== 0 || this.lastActionRoot.yaw !== 0 || this.lastActionRoot.pitch !== 0)) {
       const scale = this.config.scale || 1;
       this.characterRoot.position.y += (this.actions.root.y - this.lastActionRoot.y) * scale;
       this.characterRoot.rotation.y += this.actions.root.yaw - this.lastActionRoot.yaw;
+      this.characterRoot.rotation.x += this.actions.root.pitch - this.lastActionRoot.pitch;
       this.lastActionRoot.y = this.actions.root.y;
       this.lastActionRoot.yaw = this.actions.root.yaw;
+      this.lastActionRoot.pitch = this.actions.root.pitch;
     }
 
     // ---- 6. face ----------------------------------------------------------
@@ -1204,15 +1207,17 @@ export class CharacterSystem {
     this.revertActionRoot();
   }
 
-  /** Return any applied hop/spin offset to the character root. */
+  /** Return any applied hop/spin/flip offset to the character root. */
   private revertActionRoot(): void {
-    if (this.characterRoot && (this.lastActionRoot.y !== 0 || this.lastActionRoot.yaw !== 0)) {
+    if (this.characterRoot && (this.lastActionRoot.y !== 0 || this.lastActionRoot.yaw !== 0 || this.lastActionRoot.pitch !== 0)) {
       const scale = this.config.scale || 1;
       this.characterRoot.position.y -= this.lastActionRoot.y * scale;
       this.characterRoot.rotation.y -= this.lastActionRoot.yaw;
+      this.characterRoot.rotation.x -= this.lastActionRoot.pitch;
     }
     this.lastActionRoot.y = 0;
     this.lastActionRoot.yaw = 0;
+    this.lastActionRoot.pitch = 0;
   }
 
   /**

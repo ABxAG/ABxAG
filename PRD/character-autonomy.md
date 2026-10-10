@@ -14,7 +14,7 @@
 
 | # | Feature | Path |
 |---|---|---|
-| 1 | One-shot body actions: jump, wave, bow, spin, nod, shake-head, shrug, dance, stretch | New `CharacterActions` engine, driven through `PoseBuffer` + root motion |
+| 1 | One-shot body actions: jump, wave, bow, spin, nod, shake-head, shrug, dance, stretch, backflip | New `CharacterActions` engine, driven through `PoseBuffer` + root motion (hop/spin/flip) |
 | 2 | Voice tools: `characterPerform`, `switchCharacter`, `setOutfitColor` | `voice/liveAgentTools.ts` + `ABxAGRuntime.characterCommand()` |
 | 3 | Server → stage bridge: `character.command` app event → window CustomEvent → `CharacterSystem` / App | `shared/appEvents.ts`, `useAppEvents.ts`, `ABxAGCharacter.tsx`, `App.tsx` |
 | 4 | Outfit tint (cloth + hair, resettable) | `CharacterSystem.setOutfitTint()` via role colour multiplier |
@@ -47,7 +47,14 @@ One action at a time; a new one replaces the running one. Mounted in
 `CharacterSystem.update()` between behaviours and the pose-layer loop, so
 idle/gaze keep breathing underneath.
 
-Supported: `jump | wave | bow | spin | nod | shake_head | shrug | dance | stretch`.
+Supported: `jump | wave | bow | spin | nod | shake_head | shrug | dance | stretch | backflip`.
+
+The desktop-companion doll has full body control too: voice tool
+`companionPerform(action)` travels backend → shell → companion window as
+`perform:<action>` and plays on the doll's own CharacterSystem
+(`mapCompanionStringCommand`, tested). Outfit/action commands carry an
+optional `target` (stage/companion/both) so each doll can keep its own
+colour.
 
 ### 4.2 Command flow
 

@@ -10,10 +10,6 @@ coverage/
 cognition/*.json
 .env*
 !.env.example
-# Code-signing certificate (NEVER commit: CSC_LINK .pfx + password stay local)
-*.pfx
-*.p12
-csc-*.txt
 # Build & release artifacts (regenerated locally; installers are ~150MB)
 release/
 release-public/
