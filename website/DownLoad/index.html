@@ -65,7 +65,7 @@
             (i === 0 ? ' <span class="tag latest">latest</span>' : '') +
             (r.prerelease ? ' <span class="tag preview">preview</span>' : '') + '</h3>' +
             '<div class="meta">' + F.esc(F.fmtDate(r.date)) + '</div>' +
-            (r.notes ? '<div class="notes">' + F.md(r.notes, 600) + '</div>' : '') + '</div>' +
+            (r.notes ? '<div class="notes clamp">' + F.md(r.notes) + '</div>' : '') + '</div>' +
             '<div class="asset-btns">' +
             (r.setup ? '<a class="btn primary" style="text-align:center" href="' + r.setup.url + '">⬇ Setup · ' + F.mb(r.setup.size) + '</a>' : '') +
             (r.portable ? '<a class="btn ghost" style="text-align:center" href="' + r.portable.url + '">Portable · ' + F.mb(r.portable.size) + '</a>' : '') +
@@ -73,6 +73,7 @@
             '</div>';
           list.appendChild(card);
         });
+        F.wireClamp(list);
         status.remove();
       } catch (e) {
         status.innerHTML = 'Could not load the release list. Get every version on ' +

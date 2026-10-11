@@ -214,6 +214,22 @@ h1 { font-size: clamp(40px, 5.6vw, 66px); line-height: 1.06; letter-spacing: -0.
 .ver-card .notes .md-h, .ver-card .notes .md-h2 { color: var(--text); font-weight: 700; font-size: 14px; margin: 8px 0 2px; }
 .ver-card .notes .md-ul { margin: 4px 0 4px 18px; }
 .ver-card .notes .md-ul li { margin: 3px 0; }
+/* Clamped notes: fade + Read more button; .open shows everything. */
+.ver-card .notes.clamp { max-height: 138px; overflow: hidden; position: relative; }
+.ver-card .notes.clamp:not(.open)::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 44px;
+  background: linear-gradient(transparent, rgba(5, 5, 14, 0.92));
+  pointer-events: none;
+}
+.ver-card .notes.clamp.open { max-height: none; }
+.ver-card .notes.clamp.open::after { display: none; }
+.read-btn {
+  display: inline-block; margin-top: 8px; cursor: pointer;
+  font-size: 12.5px; font-weight: 700; color: var(--cyan-soft);
+  background: rgba(34, 211, 238, 0.08); border: 1px solid rgba(34, 211, 238, 0.4);
+  border-radius: 999px; padding: 4px 14px;
+}
+.read-btn:hover { background: rgba(34, 211, 238, 0.16); }
 .tag { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 12px; border: 1px solid; }
 .tag.latest { background: rgba(139, 92, 246, 0.18); color: #c4b5fd; border-color: rgba(139, 92, 246, 0.5); }
 .tag.preview { background: rgba(251, 191, 36, 0.12); color: #fcd34d; border-color: rgba(251, 191, 36, 0.4); }

@@ -211,13 +211,14 @@
             '<div><h3>ABxAG v' + F.esc(r.version) +
             (i === 0 ? ' <span class="tag latest">latest</span>' : '') + '</h3>' +
             '<div class="meta">' + F.esc(F.fmtDate(r.date)) + '</div>' +
-            (r.notes ? '<div class="notes">' + F.md(r.notes, 220) + '</div>' : '') + '</div>' +
+            (r.notes ? '<div class="notes clamp">' + F.md(r.notes) + '</div>' : '') + '</div>' +
             '<div class="asset-btns">' +
             (r.setup ? '<a class="btn primary small" style="text-align:center" href="' + r.setup.url + '">⬇ Setup · ' + F.mb(r.setup.size) + '</a>' : '') +
             (r.portable ? '<a class="btn ghost small" style="text-align:center" href="' + r.portable.url + '">Portable · ' + F.mb(r.portable.size) + '</a>' : '') +
             '</div>';
           list.appendChild(card);
         });
+        F.wireClamp(list);
         status.remove();
       } catch (e) {
         status.innerHTML = 'Feed unavailable — see <a href="./DownLoad/">all versions</a>.';

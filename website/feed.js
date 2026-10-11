@@ -103,5 +103,30 @@
     if (inList) html += '</ul>';
     return html;
   }
-  window.ABxAGFeed = { load, mb, esc, fmtDate, md };
+  /* Clamp long notes with a Read more / Show less toggle. Call with the
+     rendered list element after cards are in the DOM. */
+  function wireClamp(scope) {
+    const root = scope || document;
+    const blocks = root.querySelectorAll ? root.querySelectorAll('.notes.clamp') : [];
+    Array.prototype.forEach.call(blocks, (el) => {
+      if (el.querySelector('.read-btn')) return;
+      // Overflow check needs layout; run after paint.
+      requestAnimationFrame(() => {
+        if (el.scrollHeight <= el.clientHeight + 8) return;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'read-btn';
+        btn.textContent = 'Read more';
+        btn.setAttribute('aria-expanded', 'false');
+        btn.addEventListener('click', () => {
+          const open = el.classList.toggle('open');
+          btn.textContent = open ? 'Show less' : 'Read more';
+          btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+        // Outside the clamped box (it has overflow:hidden).
+        el.parentNode.appendChild(btn);
+      });
+    });
+  }
+  window.ABxAGFeed = { load, mb, esc, fmtDate, md, wireClamp };
 })();
