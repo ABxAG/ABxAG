@@ -62,7 +62,46 @@ function update(patch) {
 
 function get() { return { ...state }; }
 
-function destroy() { try { overlay?.close(); } catch {} overlay = null; }
+function destroy() { try { overlay?.close(); } catch {} overlay = null; stopPolling(); }
+
+// Live poll: pull authoritative virtual-cursor state from the backend so the
+// neon cursor glides whenever ANY virtual tool runs (AI task engine, voice,
+// API). Poll is cheap (local JSON, 1/s) and never moves the OS cursor.
+let pollTimer = null;
+function startPolling(origin) {
+  stopPolling();
+  if (!origin || typeof origin !== 'string' || !/^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) return;
+  const url = origin + '/api/virtual-cursor';
+  const tick = () => {
+    try {
+      const http = require('http');
+      const req = http.get(url, (res) => {
+        let body = '';
+        res.on('data', (c) => { if (body.length < 8192) body += c; });
+        res.on('end', () => {
+          try {
+            const s = JSON.parse(body);
+            if (s && typeof s.x === 'number' && typeof s.y === 'number') {
+              state = {
+                x: s.x, y: s.y,
+                visible: s.visible !== false,
+                status: ['active', 'paused', 'idle'].includes(s.status) ? s.status : state.status,
+                task: typeof s.task === 'string' ? s.task.slice(0, 160) : state.task,
+              };
+              push();
+            }
+          } catch {}
+        });
+      });
+      req.on('error', () => {});
+      req.setTimeout(3000, () => req.destroy());
+    } catch {}
+  };
+  pollTimer = setInterval(tick, 1000);
+  if (pollTimer.unref) pollTimer.unref();
+  tick();
+}
+function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
 
 try {
   ipcMain.removeHandler('virtual-cursor:get');
@@ -71,4 +110,4 @@ try {
   ipcMain.handle('virtual-cursor:update', (_e, patch) => update(patch));
 } catch {}
 
-module.exports = { createOverlay, updateVirtualCursor: update, getVirtualCursor: get, destroyOverlay: destroy };
+module.exports = { createOverlay, updateVirtualCursor: update, getVirtualCursor: get, destroyOverlay: destroy, startPolling, stopPolling };

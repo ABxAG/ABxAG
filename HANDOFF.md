@@ -98,3 +98,14 @@ command). Live site: `https://abxAG.absup.dev` — always write it lowercase:
 
 Start by confirming: version, `git status`, and restating what you will do.
 Never start the release routine without explicit user approval for that version.
+
+## 5. Standing auto-routine (user order, every fix)
+After EVERY fix, automatically — no need to ask:
+1. Verify (`npm run lint`, touched `.cjs` via `node --check`, `test:python`).
+2. Secret-scan the diff, then `git add` (intended files only), commit
+   (message describes the change), `git push origin DEV`
+   (`github.com/ABxAG/ABxAG`).
+3. When applicable, use `github.com/OpenCodeWEB/AiA` Actions/workflows
+   (its `OpenCodeWEB Pipeline` runs on push to AiA's own `Dev`; trigger
+   `workflow_dispatch` or push there only if the fix touches AiA).
+   ABxAG repo currently has no workflows of its own.

@@ -233,6 +233,23 @@ const pendingElectronCaptures = new Map<
 // No socket/port is opened and frames never leave the local process tree.
 process.on("message", (message: unknown) => {
   const shellMessage = message as { type?: string };
+  // Dual-cursor pause switch (Ctrl+Alt+P): toggle the Python agent's paused
+  // state so overlay and backend stay in sync. Fire-and-forget by design:
+  // the overlay already flipped its pill optimistically.
+  if (shellMessage?.type === "virtual.pause-toggle") {
+    void (async () => {
+      try {
+        const status = await callDesktopAgent("virtualStatus", {});
+        const state = (status.result as Record<string, unknown>)?.result as Record<string, unknown> | undefined;
+        const paused = state?.paused === true;
+        await callDesktopAgent(paused ? "resumeVirtual" : "pauseVirtual", { reason: "overlay_hotkey" });
+        logCommand(`VIRTUAL_${paused ? "RESUMED" : "PAUSED"} via overlay hotkey`);
+      } catch (error) {
+        logError(`VIRTUAL_PAUSE_TOGGLE_FAILED: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    })();
+    return;
+  }
   if (shellMessage?.type && shellMessage.type !== "screen-capture-response") {
     runtimeRef?.handleShellMessage(message as Record<string, unknown>);
     return;
@@ -928,6 +945,23 @@ async function startServer() {
 
   app.get("/api/api-hub/status", (_req, res) => {
     res.json(apiHub.status());
+  });
+
+  // Dual-cursor: live virtual-cursor state for the Electron overlay poll.
+  // Proxies the Python agent's virtualStatus (position, task, paused).
+  app.get("/api/virtual-cursor", async (_req, res) => {
+    try {
+      const out = await callDesktopAgent("virtualStatus", {});
+      if (out.ok && out.result && typeof out.result === "object" && "result" in (out.result as Record<string, unknown>)) {
+        res.json((out.result as Record<string, unknown>).result);
+      } else if (out.ok) {
+        res.json(out.result);
+      } else {
+        res.status(502).json({ error: out.error || "Virtual cursor unavailable." });
+      }
+    } catch (error) {
+      res.status(502).json({ error: error instanceof Error ? error.message : String(error) });
+    }
   });
 
   app.get("/api/api-hub/search", (req, res) => {
@@ -1936,6 +1970,7 @@ async function startServer() {
         "- Use the declared browser and desktop tools when the user's request requires action. Execute safe multi-step work without asking for each routine step.",
         "- openApplication and closeApplication are universal Windows tools, not a fixed supported-app list. Call them for unfamiliar app names; they discover installed apps/running windows and fall back to Windows Search plus keyboard control.",
         "- For any visible button, tab, menu, or label, use clickText so the exact text is resolved at action time. Never estimate coordinates from a screenshot when a text label exists. clickText is exact-match and refuses absent or ambiguous targets; use raw coordinate click only for unlabeled canvas content.",
+        "- DUAL-CURSOR: you have a virtual (AI) pointer that never touches the user's physical mouse. Prefer it whenever the user may be working at the PC: virtualInspect/virtualFind to see controls, virtualUiAction (invoke/focus/set_value/toggle/expand/collapse/select/scroll_into_view) for buttons/fields, virtualClick/virtualType/virtualScroll with window_title for background windows. These never move the OS cursor, never steal focus, and render as a red AI cursor on screen. Use physical tools (clickText/click/typeText) only when the user is idle or explicitly asked you to take the mouse.",
         "- For unfamiliar desktop software, use observeDesktopState or viewScreen, take one bounded generic mouse/keyboard action, observe again, and verify the expected change. Never fire a long blind coordinate sequence; after two equivalent failures change strategy or report the blocker.",
         "- For external data such as weather, launches, countries, or IP information, searchApiCapabilities retrieves only relevant providers from ABxAG's internal catalogue. Prefer READY_NO_AUTH and healthy providers; catalogue presence alone does not prove an API endpoint works.",
         "- For exchange-rate or money-conversion questions, call convertCurrency directly. It uses ABxAG's verified no-key Frankfurter adapter; do not merely offer to Google the rate.",
@@ -2544,6 +2579,64 @@ async function startServer() {
                 {
                   name: "getAutoStartStatus",
                   description: "Check whether ABxAG is currently configured to auto-start on Windows login.",
+                  parameters: { type: Type.OBJECT, properties: {} }
+                },
+                // --- Dual-cursor: virtual (AI) pointer. Never moves the user's
+                // physical mouse, never steals focus; renders as a red AI
+                // cursor overlay. Prefer these when the user may be at the PC.
+                {
+                  name: "virtualMove",
+                  description: "Move only the virtual AI cursor (red overlay). The OS cursor is untouched. Pass task so the overlay shows what you are doing.",
+                  parameters: { type: Type.OBJECT, properties: { x: { type: Type.INTEGER }, y: { type: Type.INTEGER }, task: { type: Type.STRING, description: "Short label shown on the overlay status pill." } }, required: ["x", "y"] }
+                },
+                {
+                  name: "virtualClick",
+                  description: "Background left-click at virtual coordinates inside a named window via window message (no focus steal, no cursor move). Requires window_title or hwnd; without one it only records an intent.",
+                  parameters: { type: Type.OBJECT, properties: { x: { type: Type.INTEGER }, y: { type: Type.INTEGER }, window_title: { type: Type.STRING, description: "Target window title (partial match)." }, hwnd: { type: Type.INTEGER } } }
+                },
+                {
+                  name: "virtualRightClick",
+                  description: "Background right-click like virtualClick.",
+                  parameters: { type: Type.OBJECT, properties: { x: { type: Type.INTEGER }, y: { type: Type.INTEGER }, window_title: { type: Type.STRING }, hwnd: { type: Type.INTEGER } } }
+                },
+                {
+                  name: "virtualDoubleClick",
+                  description: "Background double-click like virtualClick.",
+                  parameters: { type: Type.OBJECT, properties: { x: { type: Type.INTEGER }, y: { type: Type.INTEGER }, window_title: { type: Type.STRING }, hwnd: { type: Type.INTEGER } } }
+                },
+                {
+                  name: "virtualType",
+                  description: "Type text into a background window without focusing it and without moving the cursor.",
+                  parameters: { type: Type.OBJECT, properties: { text: { type: Type.STRING }, window_title: { type: Type.STRING }, hwnd: { type: Type.INTEGER } }, required: ["text"] }
+                },
+                {
+                  name: "virtualScroll",
+                  description: "Scroll a background window without moving the cursor.",
+                  parameters: { type: Type.OBJECT, properties: { delta: { type: Type.INTEGER, description: "Wheel delta (default 120)." }, x: { type: Type.INTEGER }, y: { type: Type.INTEGER }, window_title: { type: Type.STRING }, hwnd: { type: Type.INTEGER } } }
+                },
+                {
+                  name: "virtualInspect",
+                  description: "UI Automation scan of a window's controls for the virtual cursor (read-only, no mouse move). Returns element IDs for virtualUiAction.",
+                  parameters: { type: Type.OBJECT, properties: { window_title: { type: Type.STRING }, hwnd: { type: Type.INTEGER }, max_elements: { type: Type.INTEGER }, query: { type: Type.STRING } } }
+                },
+                {
+                  name: "virtualFind",
+                  description: "Find controls by name for the virtual cursor (read-only, no mouse move).",
+                  parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: "Control name to search." }, window_title: { type: Type.STRING }, hwnd: { type: Type.INTEGER }, limit: { type: Type.INTEGER } }, required: ["query"] }
+                },
+                {
+                  name: "virtualUiAction",
+                  description: "Act on a UI element WITHOUT the physical mouse: UIA patterns only (invoke/focus/set_value/toggle/expand/collapse/select/scroll_into_view). Give element_id from virtualInspect/virtualFind, or query+window_title to find-and-act in one call. The red AI cursor glides to the element.",
+                  parameters: { type: Type.OBJECT, properties: { element_id: { type: Type.STRING }, snapshot_id: { type: Type.STRING }, query: { type: Type.STRING }, window_title: { type: Type.STRING }, hwnd: { type: Type.INTEGER }, action: { type: Type.STRING, description: "One of: invoke, focus, set_value, toggle, expand, collapse, select, scroll_into_view." }, value: { type: Type.STRING, description: "For set_value." }, task: { type: Type.STRING } } }
+                },
+                {
+                  name: "pauseVirtual",
+                  description: "Pause the virtual cursor (user wants the whole PC to themselves).",
+                  parameters: { type: Type.OBJECT, properties: { reason: { type: Type.STRING } } }
+                },
+                {
+                  name: "resumeVirtual",
+                  description: "Resume the virtual cursor after a pause.",
                   parameters: { type: Type.OBJECT, properties: {} }
                 }
               ]

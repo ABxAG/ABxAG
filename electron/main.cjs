@@ -832,6 +832,7 @@ function startShell() {
   try {
     const vc = require('./virtual-cursor.cjs');
     vc.createOverlay();
+    vc.startPolling(SERVER_ORIGIN);
     // Pause switch: Ctrl+Alt+P pauses virtual cursor, emergency still Ctrl+Alt+Shift+S.
     try {
       globalShortcut.register('Control+Alt+P', () => {
