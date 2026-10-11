@@ -7,41 +7,30 @@
   <meta name="description" content="Download every ABxAG release for Windows, arranged by version. Setup installer and portable builds." />
   <link rel="icon" type="image/jpeg" href="../ABxAG.jpg" />
   <link rel="stylesheet" href="../styles.css" />
-  <style>
-    .dl-list { display: flex; flex-direction: column; gap: 14px; margin-top: 28px; }
-    .ver-card { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: center;
-      background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; }
-    .ver-card.latest { border-color: rgba(124, 92, 255, 0.5); box-shadow: 0 0 40px rgba(124, 92, 255, 0.12); }
-    .ver-card h3 { font-size: 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .ver-card .meta { color: var(--muted); font-size: 13px; margin-top: 4px; }
-    .ver-card .notes { color: var(--muted); font-size: 13.5px; margin-top: 8px; white-space: pre-line; }
-    .tag { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 12px; }
-    .tag.latest { background: rgba(124, 92, 255, 0.18); color: #cfc2ff; border: 1px solid rgba(124, 92, 255, 0.5); }
-    .tag.preview { background: rgba(251, 191, 36, 0.12); color: #fcd34d; border: 1px solid rgba(251, 191, 36, 0.4); }
-    .asset-btns { display: flex; flex-direction: column; gap: 8px; min-width: 210px; }
-    .back { display: inline-block; margin-top: 26px; color: var(--muted); font-size: 14px; text-decoration: none; }
-    .back:hover { color: #fff; }
-    #status { text-align: center; color: var(--muted); margin-top: 30px; font-size: 14px; }
-    @media (max-width: 700px) { .ver-card { grid-template-columns: 1fr; } .asset-btns { min-width: 0; } }
-  </style>
 </head>
 <body>
+  <div class="bg-grid" aria-hidden="true"></div>
   <div class="bg-glow" aria-hidden="true"></div>
   <header class="nav">
     <a class="brand" href="../">
       <img src="../ABxAG.jpg" alt="ABxAG logo" />
-      <span>ABxAG</span>
+      <span class="brand-name">AB<em>x</em>AG</span>
+      <span class="ver-pill"><span class="dot"></span>Download</span>
     </a>
     <nav>
       <a href="../#features">Features</a>
+      <a href="../#versions">Versions</a>
       <a href="./">Download</a>
       <a href="https://github.com/ABxAG/ABxAG" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn primary small" href="https://github.com/ABxAG/ABxAG/releases/latest" target="_blank" rel="noopener">⬇ Latest</a>
     </nav>
   </header>
   <main>
     <section class="section" style="padding-top:56px">
-      <h2>Download ABxAG</h2>
-      <p class="center muted">Every release, newest first. Pick any version — the app's updater can switch between them anytime.</p>
+      <div class="sec-head">
+        <h2>Download <span class="grad">ABxAG</span></h2>
+        <p>Every release, newest first. Pick any version — the app's updater can switch between them anytime.</p>
+      </div>
       <div id="status">Loading releases…</div>
       <div id="list" class="dl-list"></div>
       <div class="center"><a class="back" href="../">← Back to homepage</a></div>
@@ -49,59 +38,41 @@
   </main>
   <footer>
     <div class="foot-inner">
-      <span><b>ABxAG</b> · a private 3D AI desktop companion</span>
+      <span class="foot-brand"><img src="../ABxAG.jpg" alt="" /><span><b>ABxAG</b> · a private 3D AI desktop companion</span></span>
       <span><a href="https://github.com/ABxAG/ABxAG" target="_blank" rel="noopener">GitHub</a> ·
       <a href="https://github.com/ABxAG/ABxAG/releases" target="_blank" rel="noopener">Releases</a></span>
     </div>
   </footer>
+  <script src="../feed.js"></script>
   <script>
     (async function () {
       const status = document.getElementById('status');
       const list = document.getElementById('list');
-      function mb(n) { return (n / 1048576).toFixed(1) + ' MB'; }
-      function esc(s) { return String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
-      function render(data) {
-        const rels = (Array.isArray(data) ? data : []).filter(r => !r.draft);
-        if (!rels.length) return false;
+      const F = window.ABxAGFeed;
+      try {
+        // feed.js normalizes BOTH shapes (bundled mirror + GitHub API),
+        // so this page works even where api.github.com is blocked.
+        const rels = await F.load('../');
+        if (!rels.length) throw new Error('empty');
         list.innerHTML = '';
         rels.forEach((r, i) => {
-          const tag = String(r.tag_name || '').replace(/^[vV]/, '');
-          const assets = Array.isArray(r.assets) ? r.assets : [];
-          const setup = assets.find(a => /-Setup-.*\.exe$/i.test(a.name || ''));
-          const portable = assets.find(a => /-Portable-.*\.exe$/i.test(a.name || ''));
-          const date = r.published_at ? new Date(r.published_at).toLocaleDateString() : '';
           const card = document.createElement('div');
           card.className = 'ver-card' + (i === 0 ? ' latest' : '');
           card.innerHTML =
-            '<div><h3>ABxAG v' + esc(tag) +
+            '<div><h3>ABxAG v' + F.esc(r.version) +
             (i === 0 ? ' <span class="tag latest">latest</span>' : '') +
             (r.prerelease ? ' <span class="tag preview">preview</span>' : '') + '</h3>' +
-            '<div class="meta">' + esc(date) + '</div>' +
-            (r.body ? '<div class="notes">' + esc(String(r.body).slice(0, 600)) + '</div>' : '') + '</div>' +
+            '<div class="meta">' + F.esc(F.fmtDate(r.date)) + '</div>' +
+            (r.notes ? '<div class="notes">' + F.md(r.notes, 600) + '</div>' : '') + '</div>' +
             '<div class="asset-btns">' +
-            (setup ? '<a class="btn primary" style="text-align:center" href="' + setup.browser_download_url + '">⬇ Setup · ' + mb(setup.size || 0) + '</a>' : '') +
-            (portable ? '<a class="btn ghost" style="text-align:center" href="' + portable.browser_download_url + '">Portable · ' + mb(portable.size || 0) + '</a>' : '') +
-            (!setup && !portable ? '<span class="muted">No Windows builds attached.</span>' : '') +
+            (r.setup ? '<a class="btn primary" style="text-align:center" href="' + r.setup.url + '">⬇ Setup · ' + F.mb(r.setup.size) + '</a>' : '') +
+            (r.portable ? '<a class="btn ghost" style="text-align:center" href="' + r.portable.url + '">Portable · ' + F.mb(r.portable.size) + '</a>' : '') +
+            (!r.setup && !r.portable ? '<span class="muted">No Windows builds attached.</span>' : '') +
             '</div>';
           list.appendChild(card);
         });
-        return true;
-      }
-      // 1) Bundled snapshot (ships with the site — always works, even where
-      //    api.github.com is blocked). 2) Live refresh when reachable.
-      let shown = false;
-      try {
-        const snap = await fetch('../releases.json', { cache: 'no-store' });
-        if (snap.ok && render(await snap.json())) { shown = true; status.remove(); }
-      } catch (e) { /* fall through to live API */ }
-      try {
-        const res = await fetch('https://api.github.com/ABxAG/ABxAG/releases?per_page=30', {
-          headers: { 'Accept': 'application/vnd.github+json' }
-        });
-        if (!res.ok) throw new Error('GitHub answered ' + res.status);
-        if (render(await res.json())) { if (!shown) status.remove(); shown = true; }
-      } catch (e) { /* keep whatever is shown */ }
-      if (!shown) {
+        status.remove();
+      } catch (e) {
         status.innerHTML = 'Could not load the release list. Get every version on ' +
           '<a href="https://github.com/ABxAG/ABxAG/releases" target="_blank" rel="noopener">GitHub Releases</a>.';
       }
