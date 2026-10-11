@@ -1,4 +1,7 @@
 # Canonical lowercase download page; keeps the exact /DownLoad URL working too.
 /DownLoad /download/ 301
 /download /download/ 301
-/roadmap /roadmap/ 301
+# Canonical mixed-case Roadmap page, like gdbx.pages.dev/RoadMap.
+/roadmap /RoadMap/ 301
+/roadmap/ /RoadMap/ 301
+/RoadMap /RoadMap/ 301
