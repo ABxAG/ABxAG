@@ -25,8 +25,9 @@ const { parseReleasesForTest } = require("../electron/updates.cjs") as {
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { createUpdater } = require("../electron/updates.cjs") as {
   createUpdater: (deps: Record<string, unknown>) => {
-    getState: () => { status: string; canSilentInstall: boolean };
+    getState: () => { status: string; canSilentInstall: boolean; downloadedVersion: string | null; differentialStaged: boolean; progress: number };
     installDownloaded: (silent?: boolean) => { status: string; error?: string | null };
+    downloadVersion: (version: string) => Promise<{ status: string }>;
     _setTestState: (partial: Record<string, unknown>) => void;
   };
 };
@@ -39,8 +40,28 @@ function makeTmpInstaller(): string {
   return file;
 }
 
-function makeUpdater(opts: { packaged: boolean; exePath: string; spawnCalls: Array<{ file: string; args: string[] }>; quit: { called: boolean } }) {
+function makeFakeAu(behavior: "ok" | "error", calls: { quitAndInstall: Array<[boolean, boolean]> }) {
+  const listeners: Record<string, Array<(...a: unknown[]) => void>> = {};
+  return {
+    autoDownload: true,
+    on: (ev: string, fn: (...a: unknown[]) => void) => { (listeners[ev] = listeners[ev] || []).push(fn); },
+    once: (ev: string, fn: (...a: unknown[]) => void) => { (listeners[ev] = listeners[ev] || []).push(fn); },
+    removeListener: (ev: string, fn: (...a: unknown[]) => void) => { listeners[ev] = (listeners[ev] || []).filter((f) => f !== fn); },
+    downloadUpdate: () => {
+      setTimeout(() => {
+        (listeners["download-progress"] || []).forEach((f) => f({ percent: 50 }));
+        if (behavior === "ok") (listeners["update-downloaded"] || []).forEach((f) => f({ version: "9.9.9" }));
+        else (listeners["error"] || []).forEach((f) => f(new Error("feed unreachable")));
+      }, 10);
+      return Promise.resolve();
+    },
+    quitAndInstall: (silent: boolean, force: boolean) => { calls.quitAndInstall.push([silent, force]); },
+  };
+}
+
+function makeUpdater(opts: { packaged: boolean; exePath: string; spawnCalls: Array<{ file: string; args: string[] }>; quit: { called: boolean }; autoUpdater?: unknown }) {
   return createUpdater({
+    autoUpdater: opts.autoUpdater ?? null,
     app: {
       getVersion: () => "1.1.5",
       isPackaged: opts.packaged,
@@ -151,6 +172,43 @@ test("parseReleases still understands the GitHub API shape", () => {
 test("parseReleases drops version-less entries instead of faking up-to-date", () => {
   assert.deepEqual(parseReleasesForTest([{ nope: true }]), []);
   assert.deepEqual(parseReleasesForTest(null), []);
+});
+
+test("differential fast path stages without any full download", async () => {
+  const spawnCalls: Array<{ file: string; args: string[] }> = [];
+  const quit = { called: false };
+  const qi: Array<[boolean, boolean]> = [];
+  const u = makeUpdater({ packaged: true, exePath: "C:\\APPs\\ABxAG\\ABxAG.exe", spawnCalls, quit, autoUpdater: makeFakeAu("ok", { quitAndInstall: qi }) });
+  u._setTestState({
+    status: "update-available",
+    latestNewer: "9.9.9",
+    releases: [{ version: "9.9.9", name: "v9.9.9", notes: "", publishedAt: null, prerelease: false, setupAsset: { name: "s.exe", url: "http://127.0.0.1:9/x.exe", size: 1 }, portableAsset: null }],
+  });
+  const snap = await u.downloadVersion("9.9.9");
+  assert.equal(snap.status, "downloaded");
+  const st = u.getState();
+  assert.equal(st.differentialStaged, true);
+  assert.equal(st.downloadedVersion, "9.9.9");
+  assert.equal(spawnCalls.length, 0); // no NSIS file touched
+  u.installDownloaded(true);
+  assert.deepEqual(qi, [[true, true]]); // silent quitAndInstall on installed build
+});
+
+test("differential error falls back instead of failing", async () => {
+  const spawnCalls: Array<{ file: string; args: string[] }> = [];
+  const quit = { called: false };
+  const qi: Array<[boolean, boolean]> = [];
+  const u = makeUpdater({ packaged: true, exePath: "C:\\APPs\\ABxAG\\ABxAG.exe", spawnCalls, quit, autoUpdater: makeFakeAu("error", { quitAndInstall: qi }) });
+  u._setTestState({
+    status: "update-available",
+    latestNewer: "9.9.9",
+    releases: [{ version: "9.9.9", name: "v9.9.9", notes: "", publishedAt: null, prerelease: false, setupAsset: { name: "s.exe", url: "http://127.0.0.1:9/x.exe", size: 1 }, portableAsset: null }],
+  });
+  const snap = await u.downloadVersion("9.9.9");
+  // Custom full download to a dead port refuses fast → clean error state.
+  assert.equal(snap.status, "error");
+  assert.equal(u.getState().differentialStaged, false);
+  assert.equal(qi.length, 0);
 });
 
 test("portable build falls back to the wizard even when silent asked", async () => {

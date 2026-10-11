@@ -43,6 +43,15 @@ win:
       arch: [x64]
   artifactName: ${productName}-${version}-${arch}.${ext}
 
+# opencode-style auto-update: publish emits latest.yml + .blockmap so the
+# app can do differential (fast), hash-verified (secure) updates.
+# No cert is configured; SmartScreen behavior is unchanged from today.
+publish:
+  provider: github
+  owner: ABxAG
+  repo: ABxAG
+  releaseType: release
+
 nsis:
   oneClick: false
   perMachine: false
@@ -51,6 +60,7 @@ nsis:
   createStartMenuShortcut: true
   shortcutName: ABxAG
   artifactName: ${productName}-Setup-${version}.${ext}
+  differentialPackage: true
 
 portable:
   artifactName: ${productName}-Portable-${version}.${ext}

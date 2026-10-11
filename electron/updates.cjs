@@ -173,7 +173,21 @@ function parseReleases(json) {
   return out;
 }
 
-function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = null }) {
+/** Lazy electron-updater (opencode-style fast path). Null when the package
+ *  is unavailable (dev without install) — the custom full-download path
+ *  below keeps working on its own. */
+let cachedAutoUpdater = undefined;
+function getAutoUpdater() {
+  if (cachedAutoUpdater !== undefined) return cachedAutoUpdater;
+  try {
+    cachedAutoUpdater = require('electron-updater').autoUpdater;
+  } catch {
+    cachedAutoUpdater = null;
+  }
+  return cachedAutoUpdater;
+}
+
+function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = null, autoUpdater = null }) {
   const currentVersion = app.getVersion();
   const userAgent = `ABxAG-Updater/${currentVersion}`;
   const spawnInstaller = spawnFn || spawn;
@@ -195,10 +209,15 @@ function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = nu
     progress: 0,
     downloadedVersion: null,
     downloadedFile: null,
+    /** True when the staged update came from electron-updater's differential
+     *  download (install via quitAndInstall, not the NSIS file flow). */
+    differentialStaged: false,
     error: null,
     lastCheckedAt: null,
     canSilentInstall,
   };
+  /** The autoUpdater instance that staged the differential (for install). */
+  let stagedAu = null;
 
   let timer = null;
   let downloading = false;
@@ -266,12 +285,71 @@ function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = nu
     return snapshot();
   }
 
+  /** opencode-style fast path: differential, hash-verified download of the
+   *  LATEST version via electron-updater. Throws on any failure so the
+   *  caller falls back to the custom full download. */
+  function downloadDifferential(au, rel) {
+    return new Promise((resolve, reject) => {
+      set({ status: 'downloading', progress: 0, error: null, differentialStaged: false });
+      stagedAu = null;
+      log(`[updates] differential download via electron-updater → ${rel.version}…`);
+      const onProg = (p) => {
+        state.progress = Math.min(1, (Number(p.percent) || 0) / 100);
+        emit();
+      };
+      const onDone = (info) => {
+        cleanup();
+        stagedAu = au;
+        // Trust the updater's own feed for WHAT got staged (it may differ
+        // from our feed by a prerelease); never mislabel the version.
+        const staged = (info && info.version ? String(info.version) : rel.version).replace(/^[vV]/, '');
+        log(`[updates] differential staged ${staged} (only changed blocks downloaded).`);
+        set({ status: 'downloaded', progress: 1, downloadedVersion: staged, downloadedFile: null, differentialStaged: true });
+        resolve(snapshot());
+      };
+      const onErr = (err) => {
+        cleanup();
+        reject(err instanceof Error ? err : new Error(String(err)));
+      };
+      const cleanup = () => {
+        try { au.removeListener('download-progress', onProg); } catch {}
+        try { au.removeListener('update-downloaded', onDone); } catch {}
+        try { au.removeListener('error', onErr); } catch {}
+      };
+      try {
+        au.autoDownload = false;
+        au.on('download-progress', onProg);
+        au.once('update-downloaded', onDone);
+        au.once('error', onErr);
+        const started = au.downloadUpdate();
+        if (started && typeof started.catch === 'function') started.catch(onErr);
+      } catch (err) {
+        cleanup();
+        reject(err instanceof Error ? err : new Error(String(err)));
+      }
+    });
+  }
+
   async function downloadVersion(version) {
     const rel = state.releases.find((r) => r.version === String(version).replace(/^[vV]/, ''));
     if (!rel || !rel.setupAsset) throw new Error(`Version ${version} has no installer to download.`);
     if (downloading) return snapshot();
+    // Fast path: the newest release on a packaged build goes differential.
+    // Older releases have no latest.yml/.blockmap (or the updater is
+    // unavailable) → custom full-download path below, unchanged.
+    if (state.latestNewer && rel.version === state.latestNewer && app.isPackaged) {
+      const au = autoUpdater || getAutoUpdater();
+      if (au) {
+        try {
+          return await downloadDifferential(au, rel);
+        } catch (err) {
+          log(`[updates] differential failed (${err instanceof Error ? err.message : err}); falling back to full download…`);
+        }
+      }
+    }
     downloading = true;
-    set({ status: 'downloading', progress: 0, error: null });
+    set({ status: 'downloading', progress: 0, error: null, differentialStaged: false });
+    stagedAu = null;
     const dest = path.join(os.tmpdir(), `ABxAG-${rel.version}-Setup.exe`);
     log(`[updates] downloading ${rel.setupAsset.name}…`);
     try {
@@ -299,6 +377,22 @@ function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = nu
   }
 
   function installDownloaded(silent = false) {
+    // Differential install: the update is already staged + hash-verified by
+    // electron-updater — quit into it. Silent only for the installed build.
+    if (state.differentialStaged && stagedAu && app.isPackaged) {
+      const useSilent = Boolean(silent) && canSilentInstall;
+      installing = true;
+      set({ status: 'installing' });
+      log(`[updates] quitAndInstall differential ${state.downloadedVersion || ''}${useSilent ? ' silently' : ''}.`);
+      try {
+        stagedAu.quitAndInstall(useSilent, useSilent);
+      } catch (err) {
+        installing = false;
+        set({ status: 'error', error: `Could not install the update (${err instanceof Error ? err.message : err}).` });
+        return snapshot();
+      }
+      return snapshot();
+    }
     if (!app.isPackaged) {
       set({ status: 'error', error: 'Installing works only in the downloaded app — get the Setup installer from abxag.absup.dev/download/.' });
       return snapshot();
