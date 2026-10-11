@@ -828,6 +828,22 @@ function startShell() {
   updateTrayMenu();
   void backendRequest('GET', '/api/app-settings').then(applyShellSettings);
 
+  // Dual-cursor: virtual (AI) cursor overlay — physical mouse stays user's.
+  try {
+    const vc = require('./virtual-cursor.cjs');
+    vc.createOverlay();
+    // Pause switch: Ctrl+Alt+P pauses virtual cursor, emergency still Ctrl+Alt+Shift+S.
+    try {
+      globalShortcut.register('Control+Alt+P', () => {
+        const cur = vc.getVirtualCursor();
+        vc.updateVirtualCursor({ status: cur.status === 'paused' ? 'idle' : 'paused', paused: cur.status !== 'paused' });
+        sendToBackend({ type: 'virtual.pause-toggle' });
+      });
+    } catch {}
+  } catch (error) {
+    console.warn('[shell] virtual cursor overlay unavailable:', error && error.message);
+  }
+
   // Power / session events feed presence (no away check-ins while locked).
   for (const event of ['lock-screen', 'unlock-screen', 'suspend', 'resume']) {
     powerMonitor.on(event, () => sendToBackend({ type: 'power', event }));

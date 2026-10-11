@@ -175,6 +175,20 @@ const DESKTOP_TOOLS: ReadonlySet<string> = new Set([
   "brightnessUp", "brightnessDown", "setBrightness",
   // Windows auto-start management (V2)
   "enableAutoStart", "disableAutoStart", "getAutoStartStatus",
+  // dual-cursor: virtual (software) pointer — never moves the OS cursor
+  "virtualMove", "virtualClick", "virtualRightClick", "virtualDoubleClick",
+  "virtualType", "virtualScroll", "virtualInspect", "virtualFind",
+  "virtualUiAction", "virtualStatus",
+  "pauseVirtual", "resumeVirtual",
+]);
+
+/** Virtual tools run through the same desktop-agent HTTP bridge but are
+ *  guaranteed pointer-free on the Python side (UIA/PostMessage only). */
+const VIRTUAL_TOOLS: ReadonlySet<string> = new Set([
+  "virtualMove", "virtualClick", "virtualRightClick", "virtualDoubleClick",
+  "virtualType", "virtualScroll", "virtualInspect", "virtualFind",
+  "virtualUiAction", "virtualStatus",
+  "pauseVirtual", "resumeVirtual",
 ]);
 
 const API_HUB_TOOLS: ReadonlySet<string> = new Set([
