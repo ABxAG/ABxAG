@@ -191,6 +191,18 @@ const VIRTUAL_TOOLS: ReadonlySet<string> = new Set([
   "pauseVirtual", "resumeVirtual",
 ]);
 
+/** Action tools gated by Settings → PC control & safety → Virtual AI cursor.
+ *  virtualStatus/pauseVirtual/resumeVirtual stay available (read-only /
+ *  harmless) so the UI can always show state and the user can always pause. */
+const VIRTUAL_ACTION_TOOLS: ReadonlySet<string> = new Set([
+  "virtualMove", "virtualClick", "virtualRightClick", "virtualDoubleClick",
+  "virtualType", "virtualScroll", "virtualInspect", "virtualFind",
+  "virtualUiAction",
+]);
+
+/** Wired in startServer once the runtime (and its settings store) exists. */
+let isVirtualCursorEnabled: () => boolean = () => true;
+
 const API_HUB_TOOLS: ReadonlySet<string> = new Set([
   "searchApiCapabilities",
   "refreshApiCatalogue",
@@ -638,6 +650,13 @@ async function callDesktopAgent(
     }
   }
 
+  // Dual-cursor kill switch (Settings → PC control & safety → Virtual AI
+  // cursor). Refused here — before any agent call — so OFF truly means off.
+  if (VIRTUAL_ACTION_TOOLS.has(tool) && !isVirtualCursorEnabled()) {
+    logCommand(`VIRTUAL_BLOCKED ${tool} (virtual cursor turned off in settings)`);
+    return { ok: false, error: "Virtual cursor is turned off (Settings → PC control & safety → Virtual AI cursor). Use the physical-mouse tools instead, or ask the user to turn it back on." };
+  }
+
   // Lazy ensure: if we haven't verified the agent, try (re)starting it once.
   if (!desktopAgentVerified) {
     await ensureDesktopAgent();
@@ -740,6 +759,8 @@ async function startServer() {
   });
   await runtime.initialize();
   runtimeRef = runtime;
+  // Dual-cursor kill switch reads live settings (default ON for old files).
+  isVirtualCursorEnabled = () => runtime.settings.get().autonomy.virtualCursorEnabled !== false;
   setConsolidationGenerator(async (prompt, schema) => (await runtime.router.generate("summarization", {
     purpose: "memory.consolidation",
     messages: [{ role: "user", parts: [{ type: "text", text: prompt }] }],
@@ -948,19 +969,25 @@ async function startServer() {
   });
 
   // Dual-cursor: live virtual-cursor state for the Electron overlay poll.
-  // Proxies the Python agent's virtualStatus (position, task, paused).
+  // Proxies the Python agent's virtualStatus (position, task, paused) plus
+  // the kill switch, so the overlay hides itself when turned off.
   app.get("/api/virtual-cursor", async (_req, res) => {
+    const enabled = isVirtualCursorEnabled();
     try {
       const out = await callDesktopAgent("virtualStatus", {});
-      if (out.ok && out.result && typeof out.result === "object" && "result" in (out.result as Record<string, unknown>)) {
-        res.json((out.result as Record<string, unknown>).result);
-      } else if (out.ok) {
-        res.json(out.result);
+      const payload = (out.result && typeof out.result === "object"
+        ? (out.result as Record<string, unknown>)
+        : {}) as Record<string, unknown>;
+      const inner = (payload.result && typeof payload.result === "object"
+        ? payload.result
+        : payload) as Record<string, unknown>;
+      if (out.ok) {
+        res.json({ ...inner, enabled });
       } else {
-        res.status(502).json({ error: out.error || "Virtual cursor unavailable." });
+        res.status(502).json({ error: out.error || "Virtual cursor unavailable.", enabled });
       }
     } catch (error) {
-      res.status(502).json({ error: error instanceof Error ? error.message : String(error) });
+      res.status(502).json({ error: error instanceof Error ? error.message : String(error), enabled });
     }
   });
 
@@ -1970,7 +1997,7 @@ async function startServer() {
         "- Use the declared browser and desktop tools when the user's request requires action. Execute safe multi-step work without asking for each routine step.",
         "- openApplication and closeApplication are universal Windows tools, not a fixed supported-app list. Call them for unfamiliar app names; they discover installed apps/running windows and fall back to Windows Search plus keyboard control.",
         "- For any visible button, tab, menu, or label, use clickText so the exact text is resolved at action time. Never estimate coordinates from a screenshot when a text label exists. clickText is exact-match and refuses absent or ambiguous targets; use raw coordinate click only for unlabeled canvas content.",
-        "- DUAL-CURSOR: you have a virtual (AI) pointer that never touches the user's physical mouse. Prefer it whenever the user may be working at the PC: virtualInspect/virtualFind to see controls, virtualUiAction (invoke/focus/set_value/toggle/expand/collapse/select/scroll_into_view) for buttons/fields, virtualClick/virtualType/virtualScroll with window_title for background windows. These never move the OS cursor, never steal focus, and render as a red AI cursor on screen. Use physical tools (clickText/click/typeText) only when the user is idle or explicitly asked you to take the mouse.",
+        "- DUAL-CURSOR: you have a virtual (AI) pointer that never touches the user's physical mouse. Prefer it whenever the user may be working at the PC: virtualInspect/virtualFind to see controls, virtualUiAction (invoke/focus/set_value/toggle/expand/collapse/select/scroll_into_view) for buttons/fields, virtualClick/virtualType/virtualScroll with window_title for background windows. These never move the OS cursor, never steal focus, and render as a red AI cursor on screen. Use physical tools (clickText/click/typeText) only when the user is idle or explicitly asked you to take the mouse. If a virtual tool answers that the virtual cursor is turned off (Settings → PC control & safety), tell the user plainly and continue with physical tools — never retry virtual ones.",
         "- For unfamiliar desktop software, use observeDesktopState or viewScreen, take one bounded generic mouse/keyboard action, observe again, and verify the expected change. Never fire a long blind coordinate sequence; after two equivalent failures change strategy or report the blocker.",
         "- For external data such as weather, launches, countries, or IP information, searchApiCapabilities retrieves only relevant providers from ABxAG's internal catalogue. Prefer READY_NO_AUTH and healthy providers; catalogue presence alone does not prove an API endpoint works.",
         "- For exchange-rate or money-conversion questions, call convertCurrency directly. It uses ABxAG's verified no-key Frankfurter adapter; do not merely offer to Google the rate.",

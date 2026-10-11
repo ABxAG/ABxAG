@@ -81,6 +81,13 @@ function startPolling(origin) {
         res.on('end', () => {
           try {
             const s = JSON.parse(body);
+            // Kill switch (Settings → PC control & safety): hide the whole
+            // overlay while OFF, show it again the moment it is re-enabled.
+            if (s && s.enabled === false) {
+              if (overlay && !overlay.isDestroyed() && overlay.isVisible()) overlay.hide();
+              return;
+            }
+            if (overlay && !overlay.isDestroyed() && !overlay.isVisible()) overlay.showInactive();
             if (s && typeof s.x === 'number' && typeof s.y === 'number') {
               state = {
                 x: s.x, y: s.y,
