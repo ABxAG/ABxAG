@@ -142,19 +142,31 @@ function downloadFile(url, dest, userAgent, onProgress) {
 
 function parseReleases(json) {
   const out = [];
+  // Two shapes: GitHub API ({tag_name, name, body, published_at,
+  // assets:[{name, browser_download_url, size}]}) and our own mirror feed
+  // website/releases.json ({tag, title, date, notes, assets:[{name, url,
+  // size}]}). The mirror is the fallback whenever api.github.com 404s
+  // anonymously — parsing it as GitHub shape yields blank versions with no
+  // installers, which silently breaks auto-update AND the version list.
   for (const rel of Array.isArray(json) ? json : []) {
-    if (rel.draft) continue;
+    if (!rel || typeof rel !== 'object' || rel.draft) continue;
     const assets = Array.isArray(rel.assets) ? rel.assets : [];
+    const assetUrl = (a) => a.browser_download_url || a.url || '';
     const setup = assets.find((a) => /-Setup-.*\.exe$/i.test(a.name || ''));
     const portable = assets.find((a) => /-Portable-.*\.exe$/i.test(a.name || ''));
+    const tag = rel.tag_name || rel.tag || '';
+    const version = String(tag).replace(/^[vV]/, '');
+    // Never list a version-less entry: an unknown feed shape must surface
+    // as "no releases" (loud error) instead of fake "up-to-date" (silent).
+    if (!version) continue;
     out.push({
-      version: String(rel.tag_name || '').replace(/^[vV]/, ''),
-      name: String(rel.name || rel.tag_name || ''),
-      notes: String(rel.body || '').slice(0, 4000),
-      publishedAt: rel.published_at || null,
+      version,
+      name: String(rel.name || rel.title || tag || ''),
+      notes: String(rel.body || rel.notes || '').slice(0, 4000),
+      publishedAt: rel.published_at || rel.date || null,
       prerelease: Boolean(rel.prerelease),
-      setupAsset: setup ? { name: setup.name, url: setup.browser_download_url, size: setup.size || 0 } : null,
-      portableAsset: portable ? { name: portable.name, url: portable.browser_download_url, size: portable.size || 0 } : null,
+      setupAsset: setup ? { name: setup.name, url: assetUrl(setup), size: setup.size || 0 } : null,
+      portableAsset: portable ? { name: portable.name, url: assetUrl(portable), size: portable.size || 0 } : null,
     });
   }
   out.sort((a, b) => -compareVersions(a.version, b.version));
