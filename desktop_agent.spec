@@ -44,6 +44,7 @@ hiddenimports += [
     "desktop_agent.tools_input_ext",
     "desktop_agent.tools_desktop_icons",
     "desktop_agent.tools_explorer",
+    "desktop_agent.tools_virtual_cursor",
     "desktop_agent.perception",
 ]
 
