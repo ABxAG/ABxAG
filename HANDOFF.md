@@ -105,7 +105,9 @@ After EVERY fix, automatically — no need to ask:
 2. Secret-scan the diff, then `git add` (intended files only), commit
    (message describes the change), `git push origin DEV`
    (`github.com/ABxAG/ABxAG`).
-3. When applicable, use `github.com/OpenCodeWEB/AiA` Actions/workflows
-   (its `OpenCodeWEB Pipeline` runs on push to AiA's own `Dev`; trigger
-   `workflow_dispatch` or push there only if the fix touches AiA).
-   ABxAG repo currently has no workflows of its own.
+3. When applicable, use Actions/workflows: ABxAG's own `CI`
+   (`.github/workflows/ci.yml`) runs automatically on every push to DEV —
+   after pushing, check `gh run list --branch DEV --limit 3` and report
+   green/red. Use `github.com/OpenCodeWEB/AiA` Actions only if the fix
+   touches AiA (its `OpenCodeWEB Pipeline` runs on push to AiA's own
+   `Dev`; trigger `workflow_dispatch` or push there in that case only).

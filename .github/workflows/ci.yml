@@ -1,0 +1,47 @@
+# ABxAG CI — runs automatically on every push to DEV (see HANDOFF.md §5).
+# Mirrors the Definition of Done: tsc lint, Electron syntax checks,
+# Python desktop-agent tests. No secrets, no packaging, no releases.
+name: CI
+
+on:
+  push:
+    branches: [DEV]
+  pull_request:
+    branches: [DEV]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Node deps
+        run: npm ci
+
+      - name: Lint (tsc --noEmit)
+        run: npm run lint
+
+      - name: Electron syntax check
+        run: |
+          node --check electron/main.cjs
+          node --check electron/virtual-cursor.cjs
+          node --check electron/companion.cjs
+          node --check electron/preload.cjs
+          node --check electron/updates.cjs
+          node --check electron/win32.cjs
+
+      - name: Install Python agent deps
+        run: python -m pip install -r desktop_agent/requirements.txt
+
+      - name: Python desktop-agent tests
+        run: python -m unittest discover -s desktop_agent -p "test_*.py"
