@@ -68,8 +68,9 @@ code {
 }
 .ver-pill .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 6px; box-shadow: 0 0 8px var(--green); }
 .nav nav { display: flex; gap: 22px; align-items: center; }
-.nav nav a:not(.btn) { text-decoration: none; color: var(--muted); font-size: 14.5px; }
+.nav nav a:not(.btn) { text-decoration: none; color: var(--muted); font-size: 14.5px; padding: 4px 2px; border-bottom: 2px solid transparent; }
 .nav nav a:not(.btn):hover { color: #fff; }
+.nav nav a:not(.btn).active { color: #fff; border-bottom-color: var(--cyan); }
 .btn {
   display: inline-block; text-decoration: none; font-weight: 600; font-size: 15px;
   padding: 12px 24px; border-radius: 12px; transition: transform 0.12s ease, box-shadow 0.12s ease;
@@ -82,6 +83,8 @@ code {
 .btn.ghost { border: 1px solid var(--border); background: var(--panel); }
 .btn.small { padding: 8px 16px; font-size: 13.5px; border-radius: 10px; }
 main { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+/* Anchored sections must clear the sticky nav when jumped to. */
+section[id] { scroll-margin-top: 84px; }
 /* ---- hero ---- */
 .hero { padding: 64px 0 40px; }
 .badges { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
@@ -113,6 +116,23 @@ h1 { font-size: clamp(40px, 5.6vw, 66px); line-height: 1.06; letter-spacing: -0.
 .stat .v { font-size: 27px; font-weight: 800; letter-spacing: -0.02em; margin-top: 4px;
   background: linear-gradient(92deg, #c4b5fd, var(--cyan-soft)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .stat .v small { font-size: 13px; font-weight: 600; }
+.stat { transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.stat:hover { border-color: rgba(34, 211, 238, 0.4); box-shadow: 0 0 28px rgba(34, 211, 238, 0.12); }
+/* Reveal-on-scroll: only where the browser supports view timelines;
+   everyone else (and reduced-motion users) sees content normally. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .card, .ver-card, .term, .stat, .dl-card {
+      animation: rise-in 0.6s ease both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 22%;
+    }
+    @keyframes rise-in {
+      from { opacity: 0; transform: translateY(22px); }
+      to { opacity: 1; transform: none; }
+    }
+  }
+}
 /* ---- sections ---- */
 .section { padding: 52px 0 8px; }
 .sec-head { max-width: 720px; margin-bottom: 6px; }

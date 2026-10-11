@@ -16,12 +16,13 @@
     <a class="brand" href="./">
       <img src="./ABxAG.jpg" alt="ABxAG logo" />
       <span class="brand-name">AB<em>x</em>AG</span>
-      <span class="ver-pill"><span class="dot"></span>v1.1.14 · Online</span>
+      <span class="ver-pill"><span class="dot"></span>v1.1.14 · Windows</span>
     </a>
     <nav>
-      <a href="#features">Features</a>
-      <a href="#dual-cursor">Dual-cursor</a>
-      <a href="#versions">Versions</a>
+      <a href="#features" data-spy="features">Features</a>
+      <a href="#dual-cursor" data-spy="dual-cursor">Dual-cursor</a>
+      <a href="#models" data-spy="models">Characters</a>
+      <a href="#versions" data-spy="versions">Versions</a>
       <a href="./download/">Download</a>
       <a href="https://github.com/ABxAG/ABxAG" target="_blank" rel="noopener">GitHub</a>
       <a class="btn primary small" href="./download/">⬇ Download</a>
@@ -171,6 +172,26 @@
   </footer>
   <script src="./feed.js"></script>
   <script>
+    // Scrollspy: highlight the nav link of the section in view.
+    (function () {
+      const links = Array.prototype.slice.call(document.querySelectorAll('[data-spy]'));
+      if (!links.length || !('IntersectionObserver' in window)) return;
+      const map = {};
+      links.forEach((a) => { map[a.getAttribute('data-spy')] = a; });
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            links.forEach((a) => a.classList.remove('active'));
+            const a = map[e.target.id];
+            if (a) a.classList.add('active');
+          }
+        });
+      }, { rootMargin: '-40% 0px -55% 0px' });
+      Object.keys(map).forEach((id) => {
+        const s = document.getElementById(id);
+        if (s) obs.observe(s);
+      });
+    })();
     (async function () {
       const status = document.getElementById('status');
       const list = document.getElementById('list');

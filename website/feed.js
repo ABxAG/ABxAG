@@ -70,11 +70,19 @@
   /* Minimal markdown for release notes: ##/### headings, **bold**, `code`,
      - bullets, blank-line paragraphs. Everything escaped first. */
   function md(src, maxChars) {
-    const lines = String(src || '').slice(0, maxChars || 1200).split('\n');
+    let text = String(src || '');
+    const max = maxChars || 1200;
+    // Cut on a word boundary so previews never end mid-word.
+    if (text.length > max) {
+      const cut = text.slice(0, max).replace(/\s+\S*$/, '');
+      text = (cut || text.slice(0, max)) + ' …';
+    }
+    const lines = text.split('\n');
     let html = '', inList = false;
     const inline = (t) => esc(t)
       .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>');
     for (const line of lines) {
       const h3 = line.match(/^###\s+(.*)/);
       const h2 = line.match(/^##\s+(.*)/);
