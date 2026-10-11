@@ -69,15 +69,9 @@
   function fmtDate(iso) { try { return iso ? new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''; } catch (e) { return ''; } }
   /* Minimal markdown for release notes: ##/### headings, **bold**, `code`,
      - bullets, blank-line paragraphs. Everything escaped first. */
-  function md(src, maxChars) {
-    let text = String(src || '');
-    const max = maxChars || 1200;
-    // Cut on a word boundary so previews never end mid-word.
-    if (text.length > max) {
-      const cut = text.slice(0, max).replace(/\s+\S*$/, '');
-      text = (cut || text.slice(0, max)) + ' …';
-    }
-    const lines = text.split('\n');
+  function md(src) {
+    // Full text always — visual shortening is the clamp's job (Read more).
+    const lines = String(src || '').split('\n');
     let html = '', inList = false;
     const inline = (t) => esc(t)
       .replace(/`([^`]+)`/g, '<code>$1</code>')
