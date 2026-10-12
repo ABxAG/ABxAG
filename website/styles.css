@@ -118,20 +118,43 @@ h1 { font-size: clamp(40px, 5.6vw, 66px); line-height: 1.06; letter-spacing: -0.
 .stat .v small { font-size: 13px; font-weight: 600; }
 .stat { transition: border-color 0.15s ease, box-shadow 0.15s ease; }
 .stat:hover { border-color: rgba(34, 211, 238, 0.4); box-shadow: 0 0 28px rgba(34, 211, 238, 0.12); }
-/* Reveal-on-scroll: only where the browser supports view timelines;
-   everyone else (and reduced-motion users) sees content normally. */
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .card, .ver-card, .term, .stat, .dl-card {
-      animation: rise-in 0.6s ease both;
-      animation-timeline: view();
-      animation-range: entry 0% cover 22%;
-    }
-    @keyframes rise-in {
-      from { opacity: 0; transform: translateY(22px); }
-      to { opacity: 1; transform: none; }
-    }
+/* Motion (ChatGPT+Gemini reviewed): transform/opacity only, all gated
+   behind no-preference. JS adds .reveal hooks; no-JS sees everything. */
+@media (prefers-reduced-motion: no-preference) {
+  /* 1. Hero staggered entrance on load. */
+  .hero .badges, .hero h1, .hero .lede, .hero .cta-row, .hero .fine, .hero .stats {
+    animation: hero-in 0.7s cubic-bezier(0.22, 0.9, 0.3, 1) both;
   }
+  .hero h1 { animation-delay: 0.08s; }
+  .hero .lede { animation-delay: 0.16s; }
+  .hero .cta-row { animation-delay: 0.24s; }
+  .hero .fine { animation-delay: 0.3s; }
+  .hero .stats { animation-delay: 0.38s; }
+  @keyframes hero-in {
+    from { opacity: 0; transform: translateY(26px); }
+    to { opacity: 1; transform: none; }
+  }
+  /* 2. Animated gradient headline shimmer. */
+  .grad {
+    background-size: 220% auto;
+    animation: grad-pan 7s linear infinite;
+  }
+  @keyframes grad-pan {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  /* 3. Slow-drifting backdrop glow (one layer, transform only). */
+  .bg-glow { animation: glow-drift 20s ease-in-out infinite alternate; }
+  @keyframes glow-drift {
+    from { transform: translate3d(-2%, -1%, 0) scale(1); }
+    to { transform: translate3d(2%, 2%, 0) scale(1.06); }
+  }
+  /* 4. Scroll reveal states (JS toggles .is-visible, then unobserves). */
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.22, 0.9, 0.3, 1); }
+  .reveal.is-visible { opacity: 1; transform: none; }
+  /* 5. Card tilt gets its transform from JS; keep hover lift for the rest. */
+  .card, .ship-card { will-change: transform; }
 }
 /* ---- sections ---- */
 .section { padding: 52px 0 8px; }

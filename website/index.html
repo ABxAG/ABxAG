@@ -53,9 +53,9 @@
 
       <div class="stats">
         <div class="stat"><div class="k">Latest version</div><div class="v" id="stat-ver">…</div></div>
-        <div class="stat"><div class="k">Releases</div><div class="v" id="stat-count">…</div></div>
-        <div class="stat"><div class="k">PC tools built in</div><div class="v">96</div></div>
-        <div class="stat"><div class="k">Your mouse</div><div class="v">100<small>% yours</small></div></div>
+        <div class="stat"><div class="k">Releases</div><div class="v"><span data-countup id="stat-count">…</span></div></div>
+        <div class="stat"><div class="k">PC tools built in</div><div class="v"><span data-countup="96">96</span></div></div>
+        <div class="stat"><div class="k">Your mouse</div><div class="v"><span data-countup="100">100</span><small>% yours</small></div></div>
       </div>
     </section>
 
@@ -173,6 +173,7 @@
     </div>
   </footer>
   <script src="./feed.js"></script>
+  <script src="./anim.js"></script>
   <script>
     // Scrollspy: highlight the nav link of the section in view.
     (function () {
@@ -202,7 +203,10 @@
         const rels = await F.load('./');
         if (!rels.length) throw new Error('empty');
         document.getElementById('stat-ver').textContent = 'v' + rels[0].version;
-        document.getElementById('stat-count').textContent = String(rels.length);
+        var sc = document.getElementById('stat-count');
+        sc.setAttribute('data-countup', String(rels.length));
+        sc.textContent = String(rels.length);
+        document.dispatchEvent(new CustomEvent('abxag:countup', { detail: { id: 'stat-count' } }));
         list.innerHTML = '';
         rels.slice(0, 3).forEach((r, i) => {
           const card = document.createElement('div');
