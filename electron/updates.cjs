@@ -187,7 +187,53 @@ function getAutoUpdater() {
   return cachedAutoUpdater;
 }
 
+/** Delete our own stale downloaded installers from the OS temp dir.
+ *  Every auto-update downloads ~150MB here and nothing ever cleaned it,
+ *  so C: filled up release after release. The app remembers only ONE
+ *  pending installer, so all but the newest are orphans. Files written in
+ *  the last few minutes are left alone (a download may be in flight). */
+const STALE_INSTALLER_GRACE_MS = 10 * 60 * 1000;
+function cleanupStaleInstallers(tmpDir, keepNewest = true, log = () => {}) {
+  let removed = 0, bytes = 0;
+  let files = [];
+  try {
+    files = fs.readdirSync(tmpDir).filter((n) => /^ABxAG-.*-Setup\.exe$/i.test(n));
+  } catch {
+    return { removed: 0, bytes: 0 };
+  }
+  const now = Date.now();
+  const rows = [];
+  for (const name of files) {
+    try {
+      const st = fs.statSync(path.join(tmpDir, name));
+      rows.push({ name, mtimeMs: st.mtimeMs, size: st.size });
+    } catch {
+      /* gone — ignore */
+    }
+  }
+  rows.sort((a, b) => b.mtimeMs - a.mtimeMs);
+  rows.forEach((row, index) => {
+    if (index === 0 && keepNewest) return; // the one pending install
+    if (now - row.mtimeMs < STALE_INSTALLER_GRACE_MS) return; // in flight
+    try {
+      fs.unlinkSync(path.join(tmpDir, row.name));
+      removed += 1;
+      bytes += row.size;
+    } catch {
+      /* locked — leave it */
+    }
+  });
+  if (removed > 0) log(`[updates] cleaned ${removed} stale installer(s) (${(bytes / 1048576).toFixed(1)} MB freed).`);
+  return { removed, bytes };
+}
+
 function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = null, autoUpdater = null }) {
+  // Run once per app start: C: must not grow with every release.
+  try {
+    cleanupStaleInstallers(os.tmpdir(), undefined, log);
+  } catch {
+    /* best-effort */
+  }
   const currentVersion = app.getVersion();
   const userAgent = `ABxAG-Updater/${currentVersion}`;
   const spawnInstaller = spawnFn || spawn;
@@ -468,4 +514,4 @@ function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = nu
   };
 }
 
-module.exports = { createUpdater, compareVersions, parseReleasesForTest: parseReleases };
+module.exports = { createUpdater, compareVersions, parseReleasesForTest: parseReleases, cleanupStaleInstallers, STALE_INSTALLER_GRACE_MS };

@@ -14,6 +14,9 @@ import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-var-requires
+const { cleanupStaleInstallers } = require("../electron/updates.cjs") as {
+  cleanupStaleInstallers: (dir: string, keepNewest?: boolean, log?: () => void) => { removed: number; bytes: number };
+};
 const { parseReleasesForTest } = require("../electron/updates.cjs") as {
   parseReleasesForTest: (json: unknown) => Array<{
     version: string; name: string; notes: string; publishedAt: string | null;
@@ -209,6 +212,43 @@ test("differential error falls back instead of failing", async () => {
   assert.equal(snap.status, "error");
   assert.equal(u.getState().differentialStaged, false);
   assert.equal(qi.length, 0);
+});
+
+test("only the newest downloaded installer is kept, rest cleaned", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "abxag-cleanup-test-"));
+  try {
+    const oldF = path.join(dir, "ABxAG-9.9.8-Setup.exe");
+    const newF = path.join(dir, "ABxAG-9.9.9-Setup.exe");
+    const other = path.join(dir, "notes.txt");
+    fs.writeFileSync(oldF, "x".repeat(100));
+    fs.writeFileSync(newF, "y".repeat(50));
+    fs.writeFileSync(other, "keep me");
+    const hour = 3600 * 1000;
+    // Both older than the in-flight grace period; newest must survive.
+    fs.utimesSync(oldF, new Date(Date.now() - 2 * hour), new Date(Date.now() - 2 * hour));
+    fs.utimesSync(newF, new Date(Date.now() - 1 * hour), new Date(Date.now() - 1 * hour));
+    const out = cleanupStaleInstallers(dir, true, () => {});
+    assert.equal(out.removed, 1);
+    assert.equal(out.bytes, 100);
+    assert.equal(fs.existsSync(oldF), false);
+    assert.equal(fs.existsSync(newF), true);
+    assert.equal(fs.existsSync(other), true);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a just-written installer (in-flight download) is never deleted", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "abxag-cleanup-test-"));
+  try {
+    const f = path.join(dir, "ABxAG-9.9.9-Setup.exe");
+    fs.writeFileSync(f, "z".repeat(10));
+    const out = cleanupStaleInstallers(dir, false, () => {});
+    assert.equal(out.removed, 0);
+    assert.equal(fs.existsSync(f), true);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("portable build falls back to the wizard even when silent asked", async () => {
