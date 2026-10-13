@@ -104,10 +104,10 @@ After EVERY fix, automatically — no need to ask:
 1. Verify (`npm run lint`, touched `.cjs` via `node --check`, `test:python`).
 2. Secret-scan the diff, then land via PULL REQUEST (no direct pushes):
    branch `feat/<x>` or `fix/<x>` or `chore/<x>` off DEV → `git add`
-   (intended files only) → commit (message describes the change,
-   `Co-authored-by: ABsUP <ABsUP@users.noreply.github.com>` trailer) →
-   `git push -u origin <branch>` → `gh pr create --base DEV --fill` →
-   wait for CI green → `gh pr merge --merge --delete-branch`.
+   (intended files only) → commit (repo identity ABsUP, message describes
+   the change) → `git push -u origin <branch>` →
+   `gh pr create --base DEV --fill` → wait for CI green →
+   `gh pr merge --merge --delete-branch`.
    Direct push to DEV only for release-routine commits (bump/feed).
 3. When applicable, use Actions/workflows: ABxAG's own `CI`
    (`.github/workflows/ci.yml`) runs on every PR and every push to DEV —
