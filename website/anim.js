@@ -1,7 +1,38 @@
 /* ABxAG site animations — dependency-free vanilla JS.
  * Per Gemini + ChatGPT review: transform/opacity only, IntersectionObserver
  * with unobserve (production-safe), everything skipped under
- * prefers-reduced-motion. No-JS browsers see all content (JS adds hooks). */
+ * prefers-reduced-motion. No-JS browsers see all content (JS adds hooks).
+ * NOTE: hamburger menu lives in its own IIFE below so it ALWAYS works —
+ * even with Reduce Motion ON (common on mobile) where animations bail out. */
+(function () {
+  'use strict';
+  /* 0. Hamburger menu: toggle, close on link/Escape/outside. The button
+     is CSS-hidden on desktop, so this is a no-op there.
+     Runs unconditionally — never gated behind reduced-motion. */
+  try {
+    var menuBtn = document.querySelector('.menu-btn');
+    var nav = menuBtn && menuBtn.closest('header') ? menuBtn.closest('header').querySelector('nav') : null;
+    if (menuBtn && nav) {
+      var setMenu = function (open) {
+        nav.classList.toggle('open', open);
+        menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      };
+      menuBtn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        setMenu(!nav.classList.contains('open'));
+      });
+      nav.addEventListener('click', function (ev) {
+        if (ev.target.closest('a')) setMenu(false);
+      });
+      document.addEventListener('click', function (ev) {
+        if (nav.classList.contains('open') && !ev.target.closest('nav')) setMenu(false);
+      });
+      document.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Escape') setMenu(false);
+      });
+    }
+  } catch (e) { /* menu stays shut */ }
+})();
 (function () {
   'use strict';
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -82,31 +113,8 @@
     });
   } catch (e) { /* static numbers stay */ }
 
-  /* 3. Hamburger menu: toggle, close on link/Escape/outside. The button
-     is CSS-hidden on desktop, so this is a no-op there. */
-  try {
-    var menuBtn = document.querySelector('.menu-btn');
-    var nav = menuBtn && menuBtn.closest('header') ? menuBtn.closest('header').querySelector('nav') : null;
-    if (menuBtn && nav) {
-      var setMenu = function (open) {
-        nav.classList.toggle('open', open);
-        menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      };
-      menuBtn.addEventListener('click', function (ev) {
-        ev.stopPropagation();
-        setMenu(!nav.classList.contains('open'));
-      });
-      nav.addEventListener('click', function (ev) {
-        if (ev.target.closest('a')) setMenu(false);
-      });
-      document.addEventListener('click', function (ev) {
-        if (nav.classList.contains('open') && !ev.target.closest('nav')) setMenu(false);
-      });
-      document.addEventListener('keydown', function (ev) {
-        if (ev.key === 'Escape') setMenu(false);
-      });
-    }
-  } catch (e) { /* menu stays shut */ }
+  /* 3. (moved to top-level IIFE: hamburger always runs, even under
+     prefers-reduced-motion — see §0 above) */
 
   /* 4. Card tilt: desktop pointers only, rAF-throttled, max 6deg. */
   try {
