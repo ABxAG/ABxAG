@@ -1,4 +1,4 @@
-# ABxAG — Session Handoff Prompt (v1.1.12, DEV clean)
+# ABxAG — Session Handoff Prompt (v1.1.15, DEV)
 
 > Copy everything below the line into a new session. It contains the full
 > project state, conventions, release routine, and hard-won gotchas.
@@ -7,29 +7,37 @@
 
 You are continuing work on **ABxAG**, a private 3D AI desktop companion for
 Windows. Repo root: `D:\ABxAG` (git, branch **DEV**, public
-`github.com/ABxAG/ABxAG`). Current version **1.1.12**, tree clean, feed
-(`website/releases.json`) current with 12 releases. `gh` CLI is logged in as
+`github.com/ABxAG/ABxAG`). Current version **1.1.15**, feed
+(`website/releases.json`) current with 15 releases. `gh` CLI is logged in as
 **ABsUP**. Wrangler is logged in (account ABsUP.ORG); Cloudflare Pages
 project `abxag` auto-deploys branch DEV (output dir `website/`, no build
-command). Live site: `https://abxAG.absup.dev` — always write it lowercase:
-`abxag.absup.dev` (+ mirror `abxag.pages.dev`, download page `/download/`).
+command). Live site: `abxag.absup.dev` (+ mirror `abxag.pages.dev`).
+Site pages (all PascalCase): `/DownLoad/`, `/RoadMap/` (+ `/`, static
+`feed.js`/`anim.js`/`styles.css`, feed `releases.json`).
 
 ## 0. Safety rules (violating these broke things before)
 
 1. **NEVER kill the user's installed app.** It runs from `D:\APPs\ABxAG`.
    `Get-Process -Name "abxag"` on Windows is CASE-INSENSITIVE and matches
-   `ABxAG` too. Always match by full path (`$_.Path -like 'D:\ABxAG\...'` for
-   test processes, never touch `D:\APPs\*`). If you must free ports, ask first.
+   `ABxAG` too. Always match by full path (`$_.Path -like 'D:\ABxAG\...'`
+   for test processes, never touch `D:\APPs\*`). If you must free ports,
+   ask first. Kill ONLY PIDs you spawned yourself (verify via
+   `Win32_Process.CommandLine` first). Never touch `pyright-langserver`
+   (editor tooling) or any process you don't recognise.
 2. **Test ports:** dev server `127.0.0.1:3000`, agent `:8765`, backend
-   `47130+`. Before any smoke test, confirm the port is free AND that the
-   responder is YOUR process (stale agents on :8765 give false results —
-   check `/tools` count or the startup log line `Loaded N desktop tools`).
+   `47130+`, website previews `8901+` (pick a free one, kill YOUR server
+   afterwards). Before any smoke test, confirm the port is free AND that
+   the responder is YOUR process (stale agents on :8765 give false results
+   — check `/tools` count or the startup log line `Loaded N desktop tools`).
 3. **Never commit secrets.** `.pfx`/`.p12`/`csc-*.txt` are gitignored — keep
    it that way. No API keys in code (only test fixtures). `MODELS FOR ABxAG/`
    (licensed MMD zips) stays gitignored and local-only.
 4. `D:\MarkLV` is a SEPARATE user project outside this repo — never `git add`
    it. `release-public/`, `agent_dist/`, `agent_build/`, `dist/`,
    `node_modules/`, `logs/` are gitignored build outputs.
+5. `git status` shows ~200 phantom `M` files (line-ending stat noise,
+   `core.autocrlf=true`). Verify reality with `git diff --numstat 2>$null`
+   (empty = clean) and stage ONLY intended files explicitly — never `-A`.
 
 ## 1. Branding (exact)
 
@@ -38,6 +46,8 @@ command). Live site: `https://abxAG.absup.dev` — always write it lowercase:
   Electron `appId: dev.absup.abxag`; agent exe `agent_dist/abxag/abxag.exe`;
   wake phrase default `"hey ab"`; logo `assets/ABxAG.jpg` (+ `build/icon.*`
   regenerated from it via PIL if missing).
+- Site version pills live in `website/index.html` AND
+  `website/RoadMap/index.html` — bump BOTH on release.
 - afterPack stamps `ABxAG-runtime.exe` via the `rcedit` devDependency
   (note: `const { rcedit } = require('rcedit')` — named export).
 
@@ -49,43 +59,77 @@ command). Live site: `https://abxAG.absup.dev` — always write it lowercase:
   (`python -m unittest discover -s desktop_agent -p "test_*.py"`).
 - Python tool modules: import-safe (no side effects), covered by
   `desktop_agent/test_*.py`.
-- Commit messages describe the change; push to `origin DEV` (default branch).
-- Feature work gets a short PRD in `D:\ABxAG\PRD\`.
+- Website changes: serve `website/` locally, screenshot desktop (1280) +
+  mobile (390) via Playwright, console errors must be 0.
+- Feature work gets a short PRD in `D:\ABxAG\PRD\` + a conductor track
+  (`conductor/tracks/<id>/spec.md`, `plan.md`, registered in
+  `conductor/tracks.md`).
 
 ## 3. Release routine (patch version X.Y.Z — every step, in order)
 
 1. Bump: `package.json` + `package-lock.json` (TWO spots: root + `packages.""`)
-   + `README.md` header + `website/index.html` (pill + `ver` span).
+   + `README.md` header + `website/index.html` (pill + `ver` span) +
+   `website/RoadMap/index.html` (pill).
 2. `npm run lint` + full tests (above).
-3. If `desktop_agent/` changed: `pyinstaller desktop_agent.spec
-   --distpath agent_dist --workpath agent_build` (use `--noconfirm`; if new
-   tools are missing from the exe: ① add module to `hiddenimports` in
-   `desktop_agent.spec`, ② delete `agent_build/`+`agent_dist/` and rebuild
-   clean, ③ verify via `/tools` count AND the `Loaded N desktop tools` log —
-   beware stale agents squatting on :8765).
-4. `npm run dist:public` → `release-public/ABxAG-Setup-<v>.exe` (+ Portable).
+3. If `desktop_agent/` RUNTIME modules changed (not just `test_*`): rebuild
+   with `pyinstaller desktop_agent.spec --distpath agent_dist --workpath
+   agent_build` (use `--noconfirm`; if new tools are missing from the exe:
+   ① add module to `hiddenimports` in `desktop_agent.spec`, ② delete
+   `agent_build/`+`agent_dist/` and rebuild clean, ③ verify via `/tools`
+   count AND the `Loaded N desktop tools` log — beware stale agents
+   squatting on :8765).
+4. `npm run dist:public` → `release-public/ABxAG-Setup-<v>.exe` (+ Portable)
+   + `latest.yml` + `.blockmap` (auto-emitted by the `publish: github`
+   config — REQUIRED for differential updates).
 5. Verify: exe FileVersionInfo = new version; runtime exe FileDescription =
-   ABxAG; fresh `dist/assets/index-*.js` newer than sources; portable smoke
-   test by PID only (kill ONLY that PID afterwards).
-6. `gh release create v<V> <setup> <portable> --title "ABxAG v<V>" --notes
-   "<what changed>" --target DEV`; `git add -A && git commit && git push
+   ABxAG; `electron-updater` present under `win-unpacked/.../node_modules`;
+   fresh `dist/assets/index-*.js` newer than sources; portable smoke test by
+   PID only (backend `:47130` OK, agent 96 tools, kill-switch OFF→ON via
+   `/api/virtual-cursor`, kill ONLY your tree afterwards).
+6. `gh release create v<V> <setup> <portable> latest.yml <setup>.blockmap
+   --title "ABxAG v<V>" --notes "<New / Fixed sections>" --target DEV`;
+   then `git add` (intended files only, NOT `-A`) `&& git commit && git push
    origin DEV`.
-7. Refresh feed: `gh api repos/ABxAG/ABxAG/releases --paginate --jq '<fields>'`
-   → `website/releases.json` (strip UTF-8 BOM! PowerShell `Set-Content`
-   writes BOM and breaks parsers — always rewrite with UTF8NoBOM), commit,
-   push. Pages redeploys automatically.
+7. Refresh feed (NEVER via PowerShell `>` redirect — it writes UTF-16 and
+   mojibakes non-ASCII!): fetch with `gh api ... | python` (subprocess bytes
+   → decode UTF-8 → `json.dump(ensure_ascii=False)` → write UTF-8, no BOM),
+   commit, push. Wait ~3 min, verify live
+   (`abxag.absup.dev/releases.json` shows the new version). Pages redeploys
+   automatically.
 
-## 4. Known environment quirks
+## 4. Current feature state (v1.1.15, all shipped + verified)
+
+- **Dual-cursor co-pilot:** 12 virtual tools (96 total in frozen agent),
+  neon overlay with live poll, `Ctrl+Alt+P` pause. Kill switch:
+  Settings → PC control & safety → Virtual AI cursor
+  (`autonomy.virtualCursorEnabled`, default ON, gated in `callDesktopAgent`,
+  overlay hides when OFF). Track: `conductor/tracks/dual-cursor/`.
+- **updater-v2 hybrid:** `electron-updater` dep + `publish: github` in
+  `electron-builder.public.yml`. Latest-version path = differential
+  (sha512-verified, `quitAndInstall`); older-version/mirror/portable paths
+  stay custom in `electron/updates.cjs` (renderer contract unchanged).
+  `releases.json` kept as website + mirror feed. NO signing cert exists —
+  SmartScreen behavior unchanged. Track: `conductor/tracks/updater-v2/`.
+- **Website:** GDBx-style glass theme, live stats, versions preview,
+  dual-cursor spotlight, `/DownLoad/` + `/RoadMap/` pages, Read-more
+  toggles, markdown-lite notes, `anim.js` (hero entrance, gradient shimmer,
+  IO reveal + 2.5s backstop, count-up, tilt, hamburger), scrollspy.
+  Dual-shape feed parser shared with the app (`website/feed.js`).
+
+## 5. Known environment quirks
 
 - Anonymous `api.github.com` returns 404 on this network (even for public
   repos) — use authenticated `gh api`. The in-app updater + website already
   fall back to `abxag.absup.dev/releases.json`; asset downloads via
   `github.com` work fine.
 - PowerShell 5.1 here: no `&&` (use `;`), quote paths with spaces.
+  `>` redirect writes UTF-16 — never use it for JSON/site files (see §3.7).
 - Windows file renames that change ONLY case need a two-step rename via a
-  temp name, or TypeScript reports phantom case-conflict errors.
-- Website is dependency-free static HTML/CSS/JS in `website/` (+ `_redirects`
-  maps `/DownLoad` → `/download/`).
+  temp name (`git mv a a-tmp; git mv a-tmp A`), or TypeScript reports
+  phantom case-conflict errors.
+- Chrome auto-translate replaces DOM nodes: `anim.js` IO observers can lose
+  their targets — the 2.5s backstop sweep covers it; never ship
+  opacity:0 content without a non-IO fallback.
 - Installed user data (logs to read for crash diagnosis):
   `%APPDATA%\ABxAG\logs\` (`crash.log`, `errors.log`). Known fixed crash:
   React #31 from rendering `task.result` objects raw — always render via
@@ -94,14 +138,23 @@ command). Live site: `https://abxAG.absup.dev` — always write it lowercase:
   absup.pages.dev, x.com/ABsUPx, t.me/absups, web3.bio/absup (see IDENTITY
   block in `server.ts` finalInstructions).
 - Larger context docs: `README.md`, `docs/COGNITIVE_ARCHITECTURE.md`,
-  `PRD/about-updates.md`, `PRD/character-autonomy.md`, `conductor/`.
+  `PRD/` (per-feature PRDs), `conductor/`.
+- Research chats (user-logged-in browser, read-only unless asked to post):
+  Gemini `gemini.google.com/app/1739557deec52888` (ABxAG audit + site
+  features), ChatGPT `chatgpt.com/c/6acbd4d2-c318-83e8-9884-d49b2a8438cb`
+  (security audit + product-hub plan). Full improvement backlog was
+  delivered in chat on 2026-10-11 — ask the user for it if planning new
+  work (candidates: interactive demo, Security Center, SHA-256 download
+  guide, docs hub, P0 IPC-auth hardening).
 
-Start by confirming: version, `git status`, and restating what you will do.
+Start by confirming: version, `git status` (via `git diff --numstat`,
+see §0.5), and restating what you will do.
 Never start the release routine without explicit user approval for that version.
 
-## 5. Standing auto-routine (user order, every fix)
+## 6. Standing auto-routine (user order, every fix)
 After EVERY fix, automatically — no need to ask:
-1. Verify (`npm run lint`, touched `.cjs` via `node --check`, `test:python`).
+1. Verify (`npm run lint`, touched `.cjs` via `node --check`, `test:python`,
+   website screenshots if touched).
 2. Secret-scan the diff, then land via PULL REQUEST (no direct pushes):
    branch `feat/<x>` or `fix/<x>` or `chore/<x>` off DEV → `git add`
    (intended files only) → commit (repo identity ABsUP, message describes
