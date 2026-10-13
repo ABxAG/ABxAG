@@ -531,6 +531,57 @@ footer { border-top: 1px solid var(--border); margin-top: 56px; background: rgba
 .rm-step.right .rm-scard::after { left: -17px; border-right-color: var(--border); border-left: none; }
 .rm-scard:hover { border-color: rgba(52, 211, 153, 0.5); transform: translateY(-2px); }
 .rm-scard .rm-ico { margin: 0; flex-shrink: 0; border-radius: 14px; width: 52px; height: 52px; }
+.rm-scard[data-era] { cursor: pointer; }
+.rm-more {
+  display: inline-block; margin: 10px 0 0 8px; font-size: 11px; font-weight: 700;
+  color: var(--cyan-soft); border: 1px solid rgba(34, 211, 238, 0.4);
+  background: rgba(34, 211, 238, 0.07); border-radius: 999px; padding: 2px 12px;
+  white-space: nowrap;
+}
+.rm-scard:hover .rm-more { background: rgba(34, 211, 238, 0.16); }
+/* spine scroll-progress fill (JS sets height; skipped under reduced-motion) */
+.rm-spine-fill {
+  position: absolute; top: 8px; left: 50%; width: 4px; height: 0;
+  transform: translateX(-50%); border-radius: 4px; z-index: 0;
+  background: linear-gradient(180deg, #34d399, #8b5cf6 55%, #22d3ee);
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.9), 0 0 30px rgba(34, 211, 238, 0.5);
+}
+/* era modal */
+.rm-modal { position: fixed; inset: 0; z-index: 50; display: none; }
+.rm-modal.open { display: block; }
+.rm-modal-ov { position: absolute; inset: 0; background: rgba(3, 3, 10, 0.72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.rm-modal-panel {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(540px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow-y: auto;
+  background: linear-gradient(180deg, rgba(30, 22, 55, 0.97), rgba(8, 8, 20, 0.97));
+  border: 1px solid rgba(139, 92, 246, 0.55); border-radius: 20px; padding: 28px;
+  box-shadow: 0 0 70px rgba(139, 92, 246, 0.35), 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+.rm-modal-panel h3 { font-size: 24px; letter-spacing: -0.01em; margin: 2px 36px 12px 0; }
+.rm-modal-x {
+  position: absolute; top: 14px; right: 14px; width: 36px; height: 36px;
+  border-radius: 10px; cursor: pointer; color: var(--text); font-size: 16px;
+  background: var(--panel); border: 1px solid var(--border);
+}
+.rm-modal-x:hover { border-color: rgba(139, 92, 246, 0.6); }
+.rm-modal-list { list-style: none; margin-top: 6px; display: flex; flex-direction: column; gap: 10px; }
+.rm-modal-list li {
+  position: relative; padding: 12px 14px 12px 40px; font-size: 14.5px; color: #d6dbee;
+  background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: 12px;
+}
+.rm-modal-list li::before {
+  content: "✓"; position: absolute; left: 13px; top: 12px;
+  width: 20px; height: 20px; border-radius: 50%; font-size: 12px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; color: #06281c;
+  background: linear-gradient(135deg, #34d399, #22d3ee);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .rm-modal.open .rm-modal-panel { animation: rm-pop 0.28s cubic-bezier(0.22, 0.9, 0.3, 1.2) both; }
+  .rm-modal.open .rm-modal-ov { animation: rm-fade 0.2s ease both; }
+  @keyframes rm-pop { from { opacity: 0; transform: translate(-50%, -48%) scale(0.94); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+  @keyframes rm-fade { from { opacity: 0; } to { opacity: 1; } }
+  .rm-scard { will-change: transform; }
+}
 .rm-era-no { font-family: Consolas, monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--violet-soft); }
 .rm-step.current .rm-scard {
   border-color: rgba(139, 92, 246, 0.75);
@@ -604,6 +655,7 @@ footer { border-top: 1px solid var(--border); margin-top: 56px; background: rgba
   /* spine docks left; all cards stack on the right */
   .rm-spine { margin-top: 36px; }
   .rm-spine::before { left: 17px; }
+  .rm-spine-fill { left: 17px; }
   .rm-step, .rm-step.left, .rm-step.right { width: 100%; padding: 0 0 22px 54px; margin: 0; }
   .rm-step.left .rm-snode, .rm-step.right .rm-snode { left: 0; right: auto; }
   .rm-step.left .rm-scard::after, .rm-step.right .rm-scard::after { left: -17px; right: auto; border-right-color: var(--border); border-left: none; }
