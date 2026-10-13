@@ -102,12 +102,17 @@ Never start the release routine without explicit user approval for that version.
 ## 5. Standing auto-routine (user order, every fix)
 After EVERY fix, automatically — no need to ask:
 1. Verify (`npm run lint`, touched `.cjs` via `node --check`, `test:python`).
-2. Secret-scan the diff, then `git add` (intended files only), commit
-   (message describes the change), `git push origin DEV`
-   (`github.com/ABxAG/ABxAG`).
+2. Secret-scan the diff, then land via PULL REQUEST (no direct pushes):
+   branch `feat/<x>` or `fix/<x>` or `chore/<x>` off DEV → `git add`
+   (intended files only) → commit (repo identity ABsUP, message describes
+   the change) → `git push -u origin <branch>` →
+   `gh pr create --base DEV --fill` → wait for CI green →
+   `gh pr merge --merge --delete-branch`.
+   Direct push to DEV only for release-routine commits (bump/feed).
 3. When applicable, use Actions/workflows: ABxAG's own `CI`
-   (`.github/workflows/ci.yml`) runs automatically on every push to DEV —
-   after pushing, check `gh run list --branch DEV --limit 3` and report
-   green/red. Use `github.com/OpenCodeWEB/AiA` Actions only if the fix
-   touches AiA (its `OpenCodeWEB Pipeline` runs on push to AiA's own
-   `Dev`; trigger `workflow_dispatch` or push there in that case only).
+   (`.github/workflows/ci.yml`) runs on every PR and every push to DEV —
+   merge only on green; after merging, check
+   `gh run list --branch DEV --limit 3` and report green/red.
+   Use `github.com/OpenCodeWEB/AiA` Actions only if the fix touches AiA.
+4. Issues: file real bugs as GitHub issues and close them with the PR
+   (`Fixes #n`) — real activity grows achievements, noise does not.
