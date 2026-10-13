@@ -82,7 +82,33 @@
     });
   } catch (e) { /* static numbers stay */ }
 
-  /* 3. Card tilt: desktop pointers only, rAF-throttled, max 6deg. */
+  /* 3. Hamburger menu: toggle, close on link/Escape/outside. The button
+     is CSS-hidden on desktop, so this is a no-op there. */
+  try {
+    var menuBtn = document.querySelector('.menu-btn');
+    var nav = menuBtn && menuBtn.closest('header') ? menuBtn.closest('header').querySelector('nav') : null;
+    if (menuBtn && nav) {
+      var setMenu = function (open) {
+        nav.classList.toggle('open', open);
+        menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      };
+      menuBtn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        setMenu(!nav.classList.contains('open'));
+      });
+      nav.addEventListener('click', function (ev) {
+        if (ev.target.closest('a')) setMenu(false);
+      });
+      document.addEventListener('click', function (ev) {
+        if (nav.classList.contains('open') && !ev.target.closest('nav')) setMenu(false);
+      });
+      document.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Escape') setMenu(false);
+      });
+    }
+  } catch (e) { /* menu stays shut */ }
+
+  /* 4. Card tilt: desktop pointers only, rAF-throttled, max 6deg. */
   try {
     if (!finePointer || !('requestAnimationFrame' in window)) return;
     var cards = document.querySelectorAll('.card, .ship-card');
