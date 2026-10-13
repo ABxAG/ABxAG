@@ -218,6 +218,10 @@
      Modal works always; tilt/progress are skipped under reduced-motion. */
   (function () {
     'use strict';
+    var ACCENTS = {
+      1: ['#a78bfa', '#8b5cf6'], 2: ['#22d3ee', '#06b6d4'], 3: ['#34d399', '#22d3ee'],
+      4: ['#fbbf24', '#f472b6'], 5: ['#f472b6', '#a78bfa'], 6: ['#e879f9', '#8b5cf6']
+    };
     var DETAILS = {
       1: { no: 'Era 1', title: 'Voice companion', points: [
         'Real-time voice chat powered by Gemini Live.',
@@ -257,6 +261,11 @@
         var d = DETAILS[n];
         if (!d) return;
         opener = el || null;
+        var acc = ACCENTS[n] || ['#a78bfa', '#22d3ee'];
+        var panel = modal.querySelector('.rm-modal-panel');
+        panel.style.setProperty('--macc', acc[0]);
+        panel.style.setProperty('--macc2', acc[1]);
+        panel.style.setProperty('--macc-glow', acc[0] + '59');
         mNo.textContent = d.no;
         mTitle.textContent = d.title;
         mList.innerHTML = '';
