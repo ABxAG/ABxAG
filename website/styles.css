@@ -676,3 +676,92 @@ footer { border-top: 1px solid var(--border); margin-top: 56px; background: rgba
   .rm-scard .rm-ico { width: 44px; height: 44px; }
   .rm-cta { padding: 24px 20px; }
 }
+/* ---- roadmap color pass: every era owns an accent ---- */
+.rm-step:nth-of-type(1) { --acc: #a78bfa; }
+.rm-step:nth-of-type(2) { --acc: #22d3ee; }
+.rm-step:nth-of-type(3) { --acc: #34d399; }
+.rm-step:nth-of-type(4) { --acc: #fbbf24; }
+.rm-step:nth-of-type(5) { --acc: #f472b6; }
+.rm-step:nth-of-type(6) { --acc: #e879f9; }
+.rm-step .rm-scard .rm-ico {
+  color: var(--acc);
+  border-color: color-mix(in srgb, var(--acc) 55%, transparent);
+  background: color-mix(in srgb, var(--acc) 10%, transparent);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--acc) 32%, transparent),
+    inset 0 0 14px color-mix(in srgb, var(--acc) 14%, transparent);
+}
+.rm-step .rm-era-no { color: var(--acc); }
+.rm-step .rm-scard:hover {
+  border-color: color-mix(in srgb, var(--acc) 65%, transparent);
+  box-shadow: 0 0 34px color-mix(in srgb, var(--acc) 22%, transparent);
+}
+.rm-step .rm-more {
+  color: var(--acc); border-color: color-mix(in srgb, var(--acc) 45%, transparent);
+  background: color-mix(in srgb, var(--acc) 8%, transparent);
+}
+.rm-step .rm-scard:hover .rm-more { background: color-mix(in srgb, var(--acc) 18%, transparent); }
+.rm-step.done .rm-snode {
+  background: linear-gradient(135deg, var(--acc), color-mix(in srgb, var(--acc) 55%, #0b0618));
+  border-color: color-mix(in srgb, var(--acc) 70%, #fff);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--acc) 60%, transparent);
+}
+/* rainbow spine */
+.rm-spine::before {
+  background: linear-gradient(180deg, #a78bfa, #22d3ee 28%, #34d399 50%, #fbbf24 72%, #f472b6);
+  box-shadow: 0 0 14px rgba(244, 114, 182, 0.4);
+}
+.rm-spine-fill {
+  background: linear-gradient(180deg, #fff, #a78bfa 20%, #22d3ee 45%, #34d399 70%, #f472b6);
+  box-shadow: 0 0 18px rgba(232, 121, 249, 0.9), 0 0 34px rgba(34, 211, 238, 0.5);
+}
+/* colorful hero stats */
+.rm-stats > div:nth-child(1) b {
+  background: linear-gradient(92deg, #a7f3d0, #34d399);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.rm-stats > div:nth-child(2) b {
+  background: linear-gradient(92deg, #c4b5fd, #8b5cf6);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.rm-stats > div:nth-child(3) b {
+  background: linear-gradient(92deg, #a5f3fc, #22d3ee);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+/* next cards: one accent each + top light-bar */
+.rm-next { position: relative; overflow: clip; }
+.rm-next::before {
+  content: ""; position: absolute; top: 0; left: 18px; right: 18px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--acc), transparent);
+  box-shadow: 0 0 12px var(--acc);
+}
+.rm-next:nth-child(1) { --acc: #34d399; }
+.rm-next:nth-child(2) { --acc: #22d3ee; }
+.rm-next:nth-child(3) { --acc: #f472b6; }
+.rm-next:nth-child(4) { --acc: #fbbf24; }
+.rm-next .rm-ico {
+  color: var(--acc);
+  border-color: color-mix(in srgb, var(--acc) 55%, transparent);
+  background: color-mix(in srgb, var(--acc) 10%, transparent);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--acc) 30%, transparent),
+    inset 0 0 14px color-mix(in srgb, var(--acc) 12%, transparent);
+}
+.rm-next:hover { border-color: color-mix(in srgb, var(--acc) 60%, transparent); }
+/* term cards: cyan + violet */
+.rm-term:nth-child(2) { --acc: #a78bfa; }
+.rm-term:nth-child(2) {
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.08), var(--panel));
+  border-color: rgba(139, 92, 246, 0.35);
+}
+.rm-term:nth-child(2):hover { border-color: rgba(139, 92, 246, 0.6); }
+.rm-term:nth-child(2) .rm-ico {
+  color: #c4b5fd; border-color: rgba(139, 92, 246, 0.5); background: rgba(139, 92, 246, 0.08);
+  box-shadow: 0 0 22px rgba(139, 92, 246, 0.25), inset 0 0 14px rgba(139, 92, 246, 0.12);
+}
+/* modal wears the era accent */
+.rm-modal-panel {
+  border-color: var(--macc, rgba(139, 92, 246, 0.55));
+  box-shadow: 0 0 70px var(--macc-glow, rgba(139, 92, 246, 0.35)), 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+.rm-modal-list li::before {
+  background: linear-gradient(135deg, var(--macc, #34d399), var(--macc2, #22d3ee));
+}
