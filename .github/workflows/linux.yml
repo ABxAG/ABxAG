@@ -30,6 +30,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libfuse2 xvfb
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # build/icon.png is gitignored (regenerated from assets/ABxAG.jpg);
+      # the runner checkout has no icon, so recreate it before packing.
+      - name: Regenerate Linux icon
+        run: |
+          mkdir -p build
+          python -m pip install pillow
+          python -c "from PIL import Image; Image.open('assets/ABxAG.jpg').convert('RGB').resize((512, 512)).save('build/icon.png')"
+          ls -la build/icon.png
+
       - name: Pack experimental AppImage
         env:
           VITE_ABxAG_PUBLIC: "1"
