@@ -830,6 +830,20 @@ footer { border-top: 1px solid var(--border); margin-top: 56px; background: rgba
 .dl-qa p { padding: 0 20px 18px; color: var(--muted); font-size: 14.5px; }
 .dl-qa a { color: var(--cyan-soft); }
 .dl-cta { margin-bottom: 8px; }
+.dl-reqsec { padding: 8px 0; }
+.dl-req-strip {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 16px; padding: 18px 22px;
+}
+.dl-req-strip > div { display: flex; flex-direction: column; gap: 2px; }
+.dl-req-strip > div + div { border-left: 1px solid var(--border); padding-left: 18px; }
+.dl-req-strip b { font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--violet-soft); }
+.dl-req-strip span { font-size: 14px; }
+@media (max-width: 640px) {
+  .dl-req-strip { grid-template-columns: 1fr 1fr; }
+  .dl-req-strip > div + div { border-left: none; padding-left: 0; }
+}
 .dl .hero-visual { overflow: clip; }
 .dl-hero-side { min-width: 0; }
 /* download motion hooks */
