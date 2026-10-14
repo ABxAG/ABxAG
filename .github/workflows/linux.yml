@@ -1,0 +1,79 @@
+# ABxAG Linux — experimental AppImage build + headless smoke test.
+# Track: conductor/tracks/linux-exp. Manual dispatch only (no push trigger:
+# an AppImage pack on every push would burn CI minutes for an experimental
+# artifact). Runs on GitHub-hosted ubuntu-latest — no self-hosted runner
+# needed (the repo's /actions/runners page is intentionally empty).
+name: Linux
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Node deps
+        run: npm ci
+
+      - name: Lint (tsc --noEmit)
+        run: npm run lint
+
+      - name: Install system deps (AppImage runtime + headless display)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2 xvfb
+
+      - name: Pack experimental AppImage
+        env:
+          VITE_ABxAG_PUBLIC: "1"
+        run: npm run dist:linux
+
+      - name: Smoke test (xvfb, backend up, agent skipped, no agent exe)
+        run: |
+          APPIMAGE=$(ls release-linux/*.AppImage | head -n 1)
+          echo "Testing $APPIMAGE"
+          test -f "$APPIMAGE"
+          # No Windows agent blob may ship in the Linux build.
+          if ls release-linux/linux-unpacked/resources/agent 2>/dev/null; then
+            echo "FAIL: Windows agent blob present in Linux build"; exit 1
+          fi
+          chmod +x "$APPIMAGE"
+          xvfb-run -a "$APPIMAGE" --no-sandbox > /tmp/abxag-smoke.log 2>&1 &
+          APID=$!
+          echo "App PID: $APID"
+          # Wait for the packaged backend on :47130 (up to ~100s).
+          for i in $(seq 1 50); do
+            if curl -sf -o /dev/null http://127.0.0.1:47130/; then
+              echo "Backend responded after ~$((i * 2))s"; break
+            fi
+            sleep 2
+            if ! kill -0 $APID 2>/dev/null; then
+              echo "FAIL: app exited early"; tail -n 60 /tmp/abxag-smoke.log; exit 1
+            fi
+          done
+          curl -sf -o /dev/null http://127.0.0.1:47130/ || { echo "FAIL: backend never responded"; tail -n 60 /tmp/abxag-smoke.log; kill $APID; exit 1; }
+          # Agent must be skipped on Linux, never spawned.
+          LOGDIR="$HOME/.config/ABxAG/logs"
+          grep -q "AGENT_SPAWN_SKIPPED_NONWINDOWS" "$LOGDIR/startup.log" || { echo "FAIL: skip marker missing"; ls "$LOGDIR"; kill $APID; exit 1; }
+          if pgrep -f "desktop_agent|abxag.exe|uvicorn" > /dev/null; then
+            echo "FAIL: an agent process is running on Linux"; pgrep -af "desktop_agent|abxag.exe|uvicorn"; kill $APID; exit 1
+          fi
+          echo "SMOKE OK: backend up, agent skipped, no agent process."
+          kill $APID
+          sleep 2
+          kill -9 $APID 2>/dev/null || true
+          tail -n 20 /tmp/abxag-smoke.log
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: ABxAG-experimental-linux
+          path: release-linux/*.AppImage
+          retention-days: 7

@@ -1,0 +1,36 @@
+# Experimental Linux build (track linux-exp, `npm run dist:linux`).
+#
+# Differences from the Windows public build:
+#  - AppImage (x64) instead of NSIS/Portable — no Windows installer tech.
+#  - NO desktop-agent blob: the agent is Win32-native (pywin32/pywinauto) and
+#    server.ts refuses to spawn it off Windows. The app runs with chat/voice/
+#    memory UI; PC control reports unavailable.
+#  - No `publish`/latest.yml: Linux updates are not wired up. Do NOT point the
+#    Windows updater feed at this artifact.
+appId: dev.absup.abxag
+productName: ABxAG
+copyright: Copyright © 2026 ABxAG
+afterPack: electron/afterPack.cjs
+
+directories:
+  output: release-linux
+  buildResources: build
+
+asar: false
+
+files:
+  - electron/**/*
+  - dist/**/*
+  - assets/**/*
+  - "!assets/characters/**"
+  - build/icon.png
+  - package.json
+  - "!**/.env*"
+
+linux:
+  icon: build/icon.png
+  category: Utility
+  target:
+    - target: AppImage
+      arch: [x64]
+  artifactName: ${productName}-${version}-experimental-linux.${ext}
