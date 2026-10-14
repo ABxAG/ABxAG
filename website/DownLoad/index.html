@@ -27,17 +27,16 @@
       <button class="menu-btn" type="button" aria-expanded="false" aria-label="Menu"><i></i><i></i><i></i></button>
     </nav>
   </header>
-
   <main class="dl">
     <!-- HERO -->
     <section class="dl-hero">
       <div class="dl-hero-text">
-        <div class="rm-eyebrow"><span class="rm-pill">Get started</span></div>
-        <h1>Download <span class="grad">ABxAG</span></h1>
-        <p class="lede">Your AI companion, ready for your desktop. Get the latest version and experience a smarter, more natural way to work, create and get things done.</p>
+        <div class="rm-eyebrow"><span class="rm-pill">Download</span></div>
+        <h1>Get <span class="grad">ABxAG</span> Now</h1>
+        <p class="lede">Your AI companion, ready for your desktop. Download the latest version and experience a smarter, more natural way to work, create and get things done.</p>
         <div class="cta-row">
-          <a class="btn primary" id="heroWinBtn" href="https://github.com/ABxAG/ABxAG/releases/latest"><svg class="win-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M0 2.4 6.9 1.5v6.6H0V2.4Zm7.9-1.1L16 0v8.1H7.9V1.3ZM0 8.9h6.9v6.6L0 14.6V8.9Zm7.9.2H16V16l-8.1-1.1V9.1Z"/></svg><span>Download for Windows</span></a>
-          <a class="btn ghost" href="https://github.com/ABxAG/ABxAG" target="_blank" rel="noopener">View on GitHub</a>
+          <a class="btn primary" id="dlHeroSetup" href="https://github.com/ABxAG/ABxAG/releases/latest"><svg class="win-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M0 2.4 6.9 1.5v6.6H0V2.4Zm7.9-1.1L16 0v8.1H7.9V1.3ZM0 8.9h6.9v6.6L0 14.6V8.9Zm7.9.2H16V16l-8.1-1.1V9.1Z"/></svg><span id="dlHeroLabel">Download for Windows</span></a>
+          <a class="btn ghost" href="https://github.com/ABxAG/ABxAG" target="_blank" rel="noopener">View on GitHub →</a>
         </div>
         <ul class="dl-ticks">
           <li>Free to use</li>
@@ -46,112 +45,115 @@
           <li>Always up to date</li>
         </ul>
       </div>
-      <div class="hero-visual" aria-hidden="true">
-        <div class="holo-ring r1"></div>
-        <div class="holo-ring r2"></div>
-        <div class="holo-core"><img src="../ABxAG.jpg" alt="" /></div>
-        <div class="holo-chip c1">👁 See</div>
-        <div class="holo-chip c2">🧠 Think</div>
-        <div class="holo-chip c3">🎛 Control</div>
-        <div class="holo-chip c4">💾 Remember</div>
+      <div class="dl-hero-side">
+        <div class="hero-visual" aria-hidden="true">
+          <div class="holo-ring r1"></div>
+          <div class="holo-ring r2"></div>
+          <div class="holo-core"><img src="../ABxAG.jpg" alt="" /></div>
+          <div class="chat-bubble"><span class="wave"><i></i><i></i><i></i><i></i><i></i></span>Hello! I&rsquo;m ABxAG — ready when you are.</div>
+          <div class="holo-chip c1">⬇ Setup</div>
+          <div class="holo-chip c2">💼 Portable</div>
+          <div class="holo-chip c3">🐧 Linux</div>
+          <div class="holo-chip c4">✓ Verified</div>
+        </div>
       </div>
     </section>
 
     <!-- PLATFORM -->
     <section class="section">
-      <div class="sec-head">
-        <div class="rm-eyebrow"><span class="rm-pill ghost">Available platforms</span></div>
-        <h2>Choose <span class="grad">Your Platform</span></h2>
-        <p>Pick the build that fits your machine. Windows is fully featured; Linux is experimental; macOS is on the way.</p>
+      <div class="sec-head rm-head">
+        <div class="rm-eyebrow"><span class="rm-pill blue">Choose your platform</span></div>
+        <h2>Select Your <span class="grad">Platform</span></h2>
+        <p>Pick the build that fits your workflow. Versions below always match the live release feed.</p>
       </div>
       <div class="dl-plat-grid">
-        <div class="dl-plat featured">
-          <span class="dl-check" aria-hidden="true">✓</span>
+        <div class="dl-plat rec">
+          <span class="dl-flag">Recommended</span>
           <span class="dl-os"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M0 2.4 6.9 1.5v6.6H0V2.4Zm7.9-1.1L16 0v8.1H7.9V1.3ZM0 8.9h6.9v6.6L0 14.6V8.9Zm7.9.2H16V16l-8.1-1.1V9.1Z"/></svg></span>
           <h3>Windows</h3>
-          <p class="muted">64-bit · Windows 10 or later</p>
-          <a class="btn primary small" id="platWinBtn" href="https://github.com/ABxAG/ABxAG/releases/latest">⬇ Download for Windows</a>
-          <div class="dl-meta"><span id="platWinSize">Latest version</span></div>
+          <p class="muted">64-bit (Windows 10 or later)</p>
+          <a class="btn primary small" id="dlPlatSetup" href="https://github.com/ABxAG/ABxAG/releases/latest">⬇ Download for Windows</a>
+          <div class="dl-meta"><span id="dlPlatSetupMeta">Latest version</span></div>
         </div>
         <div class="dl-plat">
-          <span class="dl-os mac"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.05 12.54c-.03-2.9 2.37-4.29 2.48-4.36-1.35-1.98-3.46-2.25-4.21-2.28-1.79-.18-3.5 1.06-4.4 1.06-.91 0-2.31-1.03-3.8-1-1.95.03-3.75 1.14-4.76 2.88-2.03 3.52-.52 8.74 1.46 11.6.96 1.39 2.11 2.95 3.62 2.89 1.45-.06 2-.94 3.76-.94s2.25.94 3.8.91c1.57-.03 2.57-1.42 3.53-2.83 1.11-1.62 1.57-3.19 1.6-3.27-.04-.02-3.07-1.18-3.08-4.66ZM14.14 4.06c.8-.97 1.34-2.33 1.19-3.68-1.15.05-2.55.77-3.38 1.74-.74.86-1.39 2.23-1.22 3.55 1.29.1 2.6-.65 3.41-1.61Z"/></svg></span>
-          <h3>macOS</h3>
-          <p class="muted">macOS 11 or later</p>
-          <span class="btn ghost small disabled" aria-disabled="true">Coming soon</span>
-          <div class="dl-meta"><span>Not yet available</span></div>
+          <span class="dl-os"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3.5" y="8" width="17" height="11" rx="2.5"/><path d="M9 8V5h6v3M7 13.5h4"/></svg></span>
+          <h3>Portable</h3>
+          <p class="muted">Windows, no installation</p>
+          <a class="btn ghost small" id="dlPlatPort" href="https://github.com/ABxAG/ABxAG/releases/latest">Download Portable</a>
+          <div class="dl-meta"><span id="dlPlatPortMeta">Runs from one file</span></div>
         </div>
         <div class="dl-plat">
-          <span class="dl-os tux"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-4.9 12.05c-.5.5-1.1 1.45-1.6 2.6-.3.7.35 1.5 1.1 1.15.5-.25 1-.8 1.4-1.5.35.1.75.2 1.15.25.35 1.15 1.3 2.45 2.85 2.45 1.5 0 2.45-1.25 2.8-2.4.45-.05.85-.15 1.2-.25.4.7.9 1.25 1.4 1.5.75.35 1.4-.45 1.1-1.15-.5-1.15-1.1-2.1-1.6-2.6A7 7 0 0 0 12 2Zm-2.5 9.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm5 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15.5c-.85 0-1.55.5-1.85 1.2-.15.35.1.75.5.75h2.7c.4 0 .65-.4.5-.75-.3-.7-1-1.2-1.85-1.2Z"/></svg></span>
-          <h3>Linux <span class="tag preview">experimental</span></h3>
-          <p class="muted">Ubuntu 20.04+ or equivalent · PC control unavailable</p>
-          <!-- Exact asset URL; bump the version when a newer Linux build ships. -->
-          <a class="btn ghost small" href="https://github.com/ABxAG/ABxAG/releases/download/v1.1.15/ABxAG-1.1.15-experimental-linux.AppImage">⬇ Download for Linux</a>
-          <div class="dl-meta"><span>v1.1.15 · ≈163 MB · AppImage</span></div>
+          <span class="dl-os"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="m7 9.5 3 3-3 3M12 15.5h5"/></svg></span>
+          <h3>Linux <span class="rm-tag exp">Experimental</span></h3>
+          <p class="muted">AppImage x64 · no PC control</p>
+          <a class="btn ghost small" href="https://github.com/ABxAG/ABxAG/releases/download/v1.1.15/ABxAG-1.1.15-experimental-linux.AppImage">⬇ Download AppImage</a>
+          <div class="dl-meta"><span>v1.1.15 · ≈163 MB</span></div>
         </div>
-        <div class="dl-plat">
-          <span class="dl-os"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v10m0 0 4-4m-4 4-4-4"/><path d="M4 15v3.5A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5V15"/></svg></span>
-          <h3>Portable Version</h3>
-          <p class="muted">Windows · no install required</p>
-          <a class="btn ghost small" id="platPortBtn" href="https://github.com/ABxAG/ABxAG/releases/latest">⬇ Download Portable</a>
-          <div class="dl-meta"><span id="platPortSize">Latest version</span></div>
+        <div class="dl-plat soon">
+          <span class="dl-os"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="4.5" y="4.5" width="15" height="10" rx="1.5"/><path d="M2.5 19.5h19"/></svg></span>
+          <h3>macOS <span class="rm-tag dev">Planned</span></h3>
+          <p class="muted">Not available yet</p>
+          <span class="btn ghost small" aria-disabled="true">Coming later</span>
+          <div class="dl-meta"><span>Follow the roadmap</span></div>
         </div>
-      </div>
-    </section>
-
-    <!-- WHY -->
-    <section class="section">
-      <div class="sec-head">
-        <div class="rm-eyebrow"><span class="rm-pill violet">Why ABxAG?</span></div>
-        <h2>More Than <span class="grad">Just an App</span></h2>
-        <p>Desktop AI with unmatched speed, privacy and flexibility.</p>
-      </div>
-      <div class="grid dl-why">
-        <div class="card"><div class="neon-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 2.5 20 6v6c0 5-3.4 8.3-8 9.5C7.4 20.3 4 17 4 12V6l8-3.5Z"/><path d="m9 11.5 2.2 2.2L15.5 9"/></svg></div><h3>Local &amp; Private</h3><p>Your data stays on your device; your key never leaves it.</p></div>
-        <div class="card"><div class="neon-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9.5 2.5A2.5 2.5 0 0 1 12 5v1.5a3.5 3.5 0 0 1 2 6.3V15a4 4 0 0 1-8 .5"/><path d="M12 2.5V5M5 13.5c-1.5 0-2.5 1.2-2.5 2.7 0 2.3 2.7 2.8 4.5 2.8h4"/></svg></div><h3>Smart &amp; Contextual</h3><p>Sees your screen, remembers context, understands what you need.</p></div>
-        <div class="card"><div class="neon-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></div><h3>Customizable</h3><p>Import any 3D character. Make it yours, truly yours.</p></div>
-        <div class="card"><div class="neon-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5l2 2m0-2v4h-4M20 12a8 8 0 0 1-14 5l-2-2m0 2v-4h4"/></svg></div><h3>Always Improving</h3><p>New features, regularly — any version installs over any other.</p></div>
-      </div>
-    </section>
-
-    <!-- STEPS -->
-    <section class="section">
-      <div class="sec-head">
-        <div class="rm-eyebrow"><span class="rm-pill blue">Simple steps</span></div>
-        <h2>How to Install</h2>
-        <p>Get ABxAG up and running in just a few minutes.</p>
-      </div>
-      <div class="dl-steps">
-        <div class="dl-step"><span class="num">01</span><div><h3>Download</h3><p>Click the download button for your platform.</p></div></div>
-        <div class="dl-step"><span class="num">02</span><div><h3>Open the Installer</h3><p>Run the downloaded file and follow the prompts.</p></div></div>
-        <div class="dl-step"><span class="num">03</span><div><h3>Complete Setup</h3><p>Choose your preferences and finish the installation.</p></div></div>
-        <div class="dl-step"><span class="num">04</span><div><h3>Launch ABxAG</h3><p>Paste your free Gemini key, import a character, say “Hey AB”.</p></div></div>
-      </div>
-    </section>
-
-    <!-- REQUIREMENTS -->
-    <section class="section">
-      <div class="sec-head">
-        <div class="rm-eyebrow"><span class="rm-pill ghost">System requirements</span></div>
-        <h2>Minimum Requirements</h2>
-        <p>ABxAG is optimized for performance. Here&rsquo;s what you&rsquo;ll need:</p>
-      </div>
-      <div class="dl-req-grid">
-        <div class="dl-req"><b>OS</b><p>Windows 10+, macOS 11+, Ubuntu 20.04+</p></div>
-        <div class="dl-req"><b>RAM</b><p>4 GB minimum (8 GB recommended)</p></div>
-        <div class="dl-req"><b>Storage</b><p>500 MB free space (or more)</p></div>
-        <div class="dl-req"><b>Internet</b><p>Required for updates and AI features</p></div>
       </div>
     </section>
 
     <!-- ALL VERSIONS (live feed) -->
-    <section class="section" id="versions">
-      <div class="sec-head">
-        <h2>All <span class="grad">versions</span></h2>
-        <p>Every release, newest first. Any version installs over any other, anytime.</p>
+    <section class="section" id="all-versions">
+      <div class="sec-head rm-head">
+        <div class="rm-eyebrow"><span class="rm-pill violet">Every release</span></div>
+        <h2>All <span class="grad">Versions</span></h2>
+        <p>Every release, newest first. Pick any version — the app's updater can switch between them anytime.</p>
       </div>
       <div id="status">Loading releases…</div>
       <div id="list" class="dl-list"></div>
       <div class="center"><a class="back" href="../">← Back to homepage</a></div>
+    </section>
+
+    <!-- MORE THAN APP -->
+    <section class="section">
+      <div class="sec-head rm-head">
+        <div class="rm-eyebrow"><span class="rm-pill ghost">More than just an app</span></div>
+        <h2>More Than <span class="grad">Just an App</span></h2>
+        <p>ABxAG brings the power of AI to your desktop, with unmatched speed, privacy and flexibility.</p>
+      </div>
+      <div class="grid dl-feat">
+        <div class="card"><div class="neon-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 2.5 20 6v6c0 5-3.4 8.3-8 9.5C7.4 20.3 4 17 4 12V6l8-3.5Z"/><path d="m9 11.5 2.2 2.2L15.5 9"/></svg></div><h3>Local &amp; Private</h3><p>Your data stays on your device. Your key never leaves your PC.</p></div>
+        <div class="card"><div class="neon-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg></div><h3>Smart &amp; Contextual</h3><p>Sees your screen, remembers context, understands what you need.</p></div>
+        <div class="card"><div class="neon-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></div><h3>Customizable</h3><p>Import any 3D character. Make it yours, easily.</p></div>
+        <div class="card"><div class="neon-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg></div><h3>Always Improving</h3><p>New features, regularly — differential updates keep you current.</p></div>
+      </div>
+    </section>
+
+    <!-- INSTALL STEPS -->
+    <section class="section">
+      <div class="sec-head rm-head">
+        <div class="rm-eyebrow"><span class="rm-pill blue">Quick &amp; easy setup</span></div>
+        <h2>How to <span class="grad">Install</span></h2>
+        <p>Get ABxAG up and running in just a few minutes.</p>
+      </div>
+      <div class="dl-steps">
+        <div class="dl-step"><span class="dl-num">01</span><div><h3>Download</h3><p>Click the download button for your platform.</p></div></div>
+        <div class="dl-step"><span class="dl-num">02</span><div><h3>Open the installer</h3><p>Run the downloaded file and follow the prompts.</p></div></div>
+        <div class="dl-step"><span class="dl-num">03</span><div><h3>Complete setup</h3><p>Paste your free Gemini key and pick a character.</p></div></div>
+        <div class="dl-step"><span class="dl-num">04</span><div><h3>Launch ABxAG</h3><p>Say “Hey AB” and explore.</p></div></div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section">
+      <div class="sec-head rm-head">
+        <div class="rm-eyebrow"><span class="rm-pill violet">FAQ</span></div>
+        <h2>Common <span class="grad">Questions</span></h2>
+      </div>
+      <div class="dl-faq">
+        <details class="dl-qa"><summary>Is ABxAG free to use?</summary><p>Yes. Download any build for free and bring your own free Gemini API key from Google AI Studio. No subscription, no account.</p></details>
+        <details class="dl-qa"><summary>Do I need an account to use ABxAG?</summary><p>No signup. Your key is stored encrypted on your own PC (Windows DPAPI) and never sent anywhere except Google's API.</p></details>
+        <details class="dl-qa"><summary>Setup or Portable — which one?</summary><p>Setup installs ABxAG with fast differential auto-updates. Portable runs from a single file with a guided update wizard — take it anywhere.</p></details>
+        <details class="dl-qa"><summary>Which platforms are supported?</summary><p>Windows 10/11 (Setup + Portable) is fully supported. Linux has an experimental AppImage without PC control. macOS is planned, not available yet.</p></details>
+        <details class="dl-qa"><summary>Where can I get support?</summary><p>Open an issue on <a href="https://github.com/ABxAG/ABxAG" target="_blank" rel="noopener">GitHub</a> or browse <a href="https://github.com/ABxAG/ABxAG/releases" target="_blank" rel="noopener">all releases</a> — every version installs over any other.</p></details>
+      </div>
     </section>
 
     <!-- CTA -->
@@ -161,11 +163,11 @@
         <p class="muted">Download ABxAG now and unlock the full potential of your desktop.</p>
       </div>
       <div class="cta-row">
-        <a class="btn primary" id="ctaWinBtn" href="https://github.com/ABxAG/ABxAG/releases/latest">⬇ Download for Windows</a>
+        <a class="btn primary" id="dlCtaSetup" href="https://github.com/ABxAG/ABxAG/releases/latest">⬇ Download for Windows</a>
+        <a class="btn ghost" href="../RoadMap/">See the roadmap</a>
       </div>
     </section>
   </main>
-
   <footer>
     <div class="foot-inner">
       <span class="foot-brand"><img src="../ABxAG.jpg" alt="" /><span><b>ABxAG</b> · a private 3D AI desktop companion</span></span>
@@ -181,33 +183,32 @@
       const status = document.getElementById('status');
       const list = document.getElementById('list');
       const F = window.ABxAGFeed;
-      // Point the hero + platform + CTA buttons at the newest Setup/Portable.
-      const point = function (rels) {
+      var wireHero = function (rels) {
         try {
-          const latest = rels[0];
-          if (latest && latest.setup) {
-            const url = latest.setup.url;
-            ['heroWinBtn', 'platWinBtn', 'ctaWinBtn'].forEach(function (id) {
-              const a = document.getElementById(id);
-              if (a) a.href = url;
-            });
-            const s = document.getElementById('platWinSize');
-            if (s) s.textContent = 'v' + latest.version + ' · ' + F.mb(latest.setup.size);
-          }
-          if (latest && latest.portable) {
-            const a = document.getElementById('platPortBtn');
-            if (a) a.href = latest.portable.url;
-            const s = document.getElementById('platPortSize');
-            if (s) s.textContent = 'v' + latest.version + ' · ' + F.mb(latest.portable.size);
-          }
-        } catch (e) { /* static fallback links stay */ }
+          var r0 = rels[0];
+          if (!r0) return;
+          var set = function (id, url) {
+            var a = document.getElementById(id);
+            if (a && url) a.href = url;
+          };
+          set('dlHeroSetup', r0.setup && r0.setup.url);
+          set('dlPlatSetup', r0.setup && r0.setup.url);
+          set('dlPlatPort', r0.portable && r0.portable.url);
+          set('dlCtaSetup', r0.setup && r0.setup.url);
+          var lbl = document.getElementById('dlHeroLabel');
+          if (lbl) lbl.textContent = 'Download for Windows · v' + r0.version;
+          var meta = document.getElementById('dlPlatSetupMeta');
+          if (meta && r0.setup) meta.textContent = 'v' + r0.version + ' · ' + F.mb(r0.setup.size) + ' · Latest';
+          var pmeta = document.getElementById('dlPlatPortMeta');
+          if (pmeta && r0.portable) pmeta.textContent = 'v' + r0.version + ' · ' + F.mb(r0.portable.size);
+        } catch (e) { /* fallbacks stay */ }
       };
       try {
         // feed.js normalizes BOTH shapes (bundled mirror + GitHub API),
         // so this page works even where api.github.com is blocked.
         const rels = await F.load('../');
         if (!rels.length) throw new Error('empty');
-        point(rels);
+        wireHero(rels);
         list.innerHTML = '';
         rels.forEach((r, i) => {
           const card = document.createElement('div');
