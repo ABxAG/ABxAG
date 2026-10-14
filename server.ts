@@ -354,6 +354,14 @@ function findPythonRuntime(): string | null {
  * even if ABxAG's node process is killed.
  */
 function spawnDesktopAgent(): void {
+  // The desktop agent is Win32-native (pywin32/pywinauto/pycaw/winrt) and has
+  // no Linux build. On other platforms skip spawning entirely — the backend
+  // already degrades gracefully when the agent is unreachable.
+  if (process.platform !== "win32") {
+    console.warn(`[Desktop Agent] Skipped on ${process.platform}: PC control is Windows-only in this build.`);
+    logError(`AGENT_SPAWN_SKIPPED_NONWINDOWS: platform=${process.platform}, desktop control unavailable`);
+    return;
+  }
   const agentEnv = {
     ...process.env,
     ABxAG_AGENT_HOST: "127.0.0.1",

@@ -24,6 +24,7 @@
     "app": "npm run build && electron .",
     "dist": "npm run build && npm run build:launcher && electron-builder --win nsis portable",
     "dist:public": "set VITE_ABxAG_PUBLIC=1&& npm run build && npm run build:launcher && electron-builder --config electron-builder.public.yml --win nsis portable",
+    "dist:linux": "npm run build && electron-builder --config electron-builder.linux.yml --linux AppImage",
     "build:launcher": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-launcher.ps1",
     "test:characters": "node --import tsx --test tests/characters.test.ts",
     "test:agent": "node --import tsx --test tests/core.test.ts tests/models.test.ts tests/agentLoop.test.ts tests/presence.test.ts tests/chatOpen.test.ts tests/taskResultText.test.ts tests/updaterInstall.test.ts tests/characterVoice.test.ts tests/stageCommand.test.ts tests/outfitTint.test.ts tests/companionCommands.test.ts tests/virtualCursorSetting.test.ts",
