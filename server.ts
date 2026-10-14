@@ -359,7 +359,7 @@ function spawnDesktopAgent(): void {
   // already degrades gracefully when the agent is unreachable.
   if (process.platform !== "win32") {
     console.warn(`[Desktop Agent] Skipped on ${process.platform}: PC control is Windows-only in this build.`);
-    logError(`AGENT_SPAWN_SKIPPED_NONWINDOWS: platform=${process.platform}, desktop control unavailable`);
+    logStartup(`AGENT_SPAWN_SKIPPED_NONWINDOWS platform=${process.platform} (desktop control unavailable)`);
     return;
   }
   const agentEnv = {
