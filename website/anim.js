@@ -41,7 +41,7 @@
   /* 1. Scroll reveal: .reveal → .is-visible once, then unobserve. */
   try {
     if ('IntersectionObserver' in window) {
-      var targets = document.querySelectorAll('.card, .stat, .term, .ver-card, .ship-card, .sec-head, .dl-card, .chips, .rm-step, .rm-next, .rm-term, .rm-stats, .rm-cta');
+      var targets = document.querySelectorAll('.card, .stat, .term, .ver-card, .ship-card, .sec-head, .dl-card, .dl-plat, .dl-step, .dl-req, .chips, .rm-step, .rm-next, .rm-term, .rm-stats, .rm-cta');
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (e) {
           if (e.isIntersecting) {
