@@ -1,135 +1,146 @@
-# ABxAG 1.1.15 — source code
+<p align="center">
+  <img src="assets/ABxAG.jpg" alt="ABxAG logo" width="144" />
+</p>
 
-ABxAG is a private 3D AI companion for Windows: she talks with you by voice
-(Google Gemini Live), can see your screen when you allow it, controls apps and
-files on your PC, and lives on your desktop as a character you can drag onto
-windows.
+<h1 align="center">ABxAG</h1>
 
-This pack is the full source. If you just want to use ABxAG, install the
-setup .exe instead.
+<p align="center">Current version: <b>v1.1.15</b> · <a href="https://github.com/ABxAG/ABxAG/releases">changelog</a></p>
 
-- 🌐 Website: https://abxag.absup.dev (Download · Roadmap · Versions)
-- ⬇️ Download: https://abxag.absup.dev/DownLoad/
-- 🗺️ Roadmap: https://abxag.absup.dev/RoadMap/
-- 📦 All releases: https://github.com/ABxAG/ABxAG/releases
+<p align="center">
+  <b>Your private 3D AI desktop companion.</b><br />
+  Talks with you by voice, sees your screen when you allow it, controls apps and files —
+  powered by your own Gemini API key. No cloud account. No subscription.
+</p>
 
-## What ABxAG does (v1.1.15)
+<p align="center">
+  <a href="https://github.com/ABxAG/ABxAG/actions/workflows/ci.yml"><img src="https://github.com/ABxAG/ABxAG/actions/workflows/ci.yml/badge.svg?branch=DEV" alt="CI status" /></a>
+  <a href="https://github.com/ABxAG/ABxAG/releases/latest"><img src="https://img.shields.io/github/v/release/ABxAG/ABxAG?label=latest" alt="Latest release" /></a>
+  <img src="https://img.shields.io/badge/Windows-10%2F11-0078D6?logo=windows&logoColor=white" alt="Windows 10/11" />
+  <img src="https://img.shields.io/badge/Linux-experimental-FCC624?logo=linux&logoColor=black" alt="Linux experimental" />
+  <img src="https://img.shields.io/badge/Gemini-BYOK-1C7DFF?logo=google&logoColor=white" alt="Bring your own Gemini key" />
+</p>
 
-- **Voice companion** — real-time conversation via Gemini Live, “Hey AB” wake
-  word, reminders & alarms, quiet hours.
-- **Eyes** — screen vision + OCR; screen text is always treated as untrusted data.
-- **Hands** — 96 local PC tools (apps, files, input, browser, clipboard) gated
-  by confirmations, an emergency stop and a permission board.
-- **Dual-cursor co-pilot** — her own neon-red virtual cursor works in background
-  windows while your mouse stays 100% yours (`Ctrl+Alt+P` pauses; Settings →
-  PC control & safety → Virtual AI cursor turns her off completely).
-- **Memory & mind** — local cognition runtime: episodic memory, goals, learned
-  skills, curiosity and presence.
-- **Body** — three.js character engine; import any `.pmx / .vrm / .glb / .fbx /
-  .obj` model, `.zip` or folder (Character Studio included).
-- **Auto-update** — hybrid updater: fast differential installs for the current
-  version, one-click switch to any older version, mirror-feed fallback.
+<p align="center">
+  <a href="https://abxag.absup.dev/DownLoad/"><b>⬇ Download</b></a> ·
+  <a href="https://abxag.absup.dev/RoadMap/">Roadmap</a> ·
+  <a href="https://abxag.absup.dev/">Website</a> ·
+  <a href="https://github.com/ABxAG/ABxAG/releases">All releases</a>
+</p>
 
-## What is NOT included (on purpose)
+---
 
-- **No API key.** You use your own free Gemini key from https://aistudio.google.com.
-- **No 3D character model.** The models used while developing ABxAG have licences that forbid
-  redistribution. Import your own MMD model (.pmx, or a .zip / folder containing one) in the app:
-  the first screen offers **Import my character**, or use Settings → Character → Character Studio.
-  Only use models whose licence allows your use.
-- No personal data, logs, memories or settings.
+## ✨ Features
 
-## Requirements
+| Era | What you get |
+|---|---|
+| 🎙 **Voice companion** | Real-time conversation via Gemini Live, “Hey AB” wake word, reminders & alarms, quiet hours |
+| 👁 **Eyes** | Screen vision + OCR; screen text is always treated as untrusted data |
+| 🖐 **Hands** | 96 local PC tools (apps, files, input, browser, clipboard) gated by confirmations, an emergency stop and a permission board |
+| 🧠 **Memory & mind** | Local cognition runtime: episodic memory, goals, learned skills, curiosity and presence |
+| 🧍 **Body** | three.js character engine — import any `.pmx / .vrm / .glb / .fbx / .obj` model, `.zip` or folder (Character Studio included) |
+| 🖱 **Dual-cursor co-pilot** | Her own neon-red virtual cursor works in background windows while your mouse stays 100% yours (`Ctrl+Alt+P` pauses; Settings → PC control & safety turns her off completely) |
+| 🔄 **Auto-update** | Hybrid updater: fast differential installs for the current version, one-click switch to any older version, mirror-feed fallback |
 
-- Windows 10 or 11 (64-bit)
-- Node.js 20 or newer (https://nodejs.org)
-- Python 3.11+ (only to run or rebuild the desktop agent from source)
-- 🐧 Linux: experimental AppImage exists (v1.1.15 release asset, no PC control).
-  macOS is planned, not available yet.
+## ⬇ Download
 
-## Run it in development
+> Prefer one click? Get everything at **https://abxag.absup.dev/DownLoad/** — it auto-detects your OS.
 
-```
+| Platform | Build | Status |
+|---|---|---|
+| Windows 10/11 64-bit | **Setup** (installer + differential auto-updates) | ✅ Recommended |
+| Windows 10/11 64-bit | **Portable** (single file, guided updates) | ✅ Available |
+| Linux x64 | **AppImage** (chat/voice/memory UI; *no PC control*) | 🧪 Experimental |
+| macOS | — | 🔜 Planned |
+
+## 🚀 Quick start
+
+**Just use it:** install the Setup `.exe` → paste your free Gemini key (from
+https://aistudio.google.com) → **Import my character** → say “Hey AB”.
+
+**Run from source:**
+
+```powershell
 npm install
 pip install -r desktop_agent/requirements.txt
-npm run dev
+npm run dev        # → http://localhost:3000
 ```
 
-Open http://localhost:3000 in Chrome. The first screen asks for your Gemini API key
-(stored encrypted with Windows DPAPI in your user data folder, never in the project).
-
-Desktop app (Electron, with the desktop companion):
-
-```
-npm run app
+```powershell
+npm run app        # desktop app (Electron + companion)
 ```
 
-Optional: copy `.env.example` to `.env` for development settings. Do not put a real key in a file
-you share.
+The first screen asks for your Gemini API key — stored encrypted with Windows
+DPAPI in your user-data folder, never in the project. Optional: copy
+`.env.example` to `.env` for dev settings (never put a real key in a file you share).
 
-## Tests
+**Build the public installer:**
 
+```powershell
+pip install pyinstaller
+pyinstaller desktop_agent.spec --distpath agent_dist --workpath agent_build
+npm run dist:public   # → release-public/ABxAG-Setup-<version>.exe
 ```
-npm run lint            # tsc --noEmit
-npm run test:agent      # Node agent/character/presence/updater suites
-npm run test:characters
-npm run test:python     # python -m unittest discover -s desktop_agent -p "test_*.py"
-```
 
-CI (`.github/workflows/ci.yml`) runs lint + Electron syntax checks + Python
-agent tests on every PR and every push to DEV — merge only on green. A manual
-`Linux` workflow builds + smoke-tests the experimental AppImage.
+`npm run dist` expects a character in `assets/characters/` (not included); use `dist:public`.
 
-## Build the installer
+## 🛠 Tech stack
 
-1. Build the desktop agent (PyInstaller):
-   ```
-   pip install pyinstaller
-   pyinstaller desktop_agent.spec --distpath agent_dist --workpath agent_build --noconfirm
-   ```
-2. Build the public installer (no bundled character):
-   ```
-   npm run dist:public
-   ```
-   Output: `release-public/ABxAG-Setup-<version>.exe` (+ Portable, `latest.yml`,
-   `.blockmap` for differential updates).
+- **UI:** React 19 · Vite 6 · Tailwind 4 · Three.js (MMD/PMX)
+- **Backend:** Node + Express + WebSocket (`server.ts`), Google GenAI Live bridge
+- **Shell:** Electron 43 (desktop companion, tray, crash recovery)
+- **Agent:** Python FastAPI desktop tool server (UI Automation, input, files, apps)
+- **Brain:** local event-driven cognition runtime (`cognition/`: memory, goals, skills, presence)
+- **Site:** dependency-free static pages in `website/` (Cloudflare Pages)
 
-`npm run dist` (electron-builder.yml) expects a character in `assets/characters/`, which is not
-included; use `dist:public`. `npm run dist:linux` packs the experimental Linux
-AppImage (built on Ubuntu; the desktop agent stays Windows-only and is skipped).
-
-Releases follow `HANDOFF.md` §3 (bump → lint/tests → rebuild → pack → verify →
-`gh release` → feed refresh). Fixes land via pull request, never direct push
-(see `HANDOFF.md` §6 and `.github/`).
-
-## Project map
+## 🗺 Project map
 
 | Folder | What it is |
 |---|---|
-| `src/` | React UI, the 3D character engine (three.js, MMD/PMX), desktop companion renderer |
-| `electron/` | Desktop shell: windows, tray, desktop companion brain, crash recovery, updater |
+| `src/` | React UI, 3D character engine, companion renderer |
+| `electron/` | Desktop shell: windows, tray, companion brain, updater, crash recovery |
 | `server.ts`, `runtime/` | Local backend (Express + WebSocket), Gemini Live bridge |
-| `agent/` | PC-control agent: planner, actions, WhatsApp/chat helpers, safety checks |
+| `agent/` | PC-control planner, actions, safety checks |
 | `desktop_agent/` | Python tool server (UI Automation, input, files, apps) |
 | `models/` | Model router (Gemini and others) |
-| `voice/` | Live voice tools |
+| `cognition/`, `memory/`, `presence/` | Memory, initiative, presence |
 | `settings/`, `permissions/`, `secrets/` | Settings, permission engine, DPAPI key store |
-| `character_import/` | PMX importer and capability report |
-| `cognition/`, `memory/`, `presence/` | Memory, initiative and presence |
-| `api_hub/` | 2000+ provider catalogue + adapters |
-| `website/` | Static site (Home, DownLoad, RoadMap) deployed to Cloudflare Pages |
-| `PRD/`, `conductor/` | Per-feature PRDs, specs/plans/tracks registry |
+| `character_import/`, `voice/` | PMX importer + capability report, live voice tools |
+| `website/` | Public site (Home, DownLoad, RoadMap, release feed) |
+| `conductor/`, `PRD/` | Architecture tracks (spec + plan) and per-feature PRDs |
+| `tests/`, `desktop_agent/test_*.py` | Agent/character/Python test suites |
 
-## Graphics quality
+## 🤝 Contributing
 
-Settings → Character → Graphics quality: Auto, High, Medium, Optimized, Potato PC.
-Auto steps down by itself if the character crashes on a weak GPU.
+1. Work on the **`DEV`** branch (never commit straight to it — open a PR).
+2. Branch naming: `feat/<x>`, `fix/<x>` or `chore/<x>`; merge only when **CI is green**.
+3. Definition of done: `npm run lint` clean, relevant tests green
+   (`npm run test:agent`, `test:characters`, `test:python`), website changes
+   verified with desktop + mobile screenshots and zero console errors.
+4. Bigger features get a short PRD in `PRD/` + a conductor track in
+   `conductor/tracks/<id>/` (`spec.md`, `plan.md`, registered in `conductor/tracks.md`).
+5. Never commit secrets (`.pfx`/`.p12`/keys are gitignored) or licensed character models.
 
-## Safety
+## 🔒 Privacy & safety
 
-- The API key never reaches the web page; all Gemini calls go through the local backend.
+- Your Gemini key never reaches the web page; all AI calls go through the local backend.
 - High-risk actions (sending messages, deleting, installing, purchases) ask for confirmation.
-- Text from websites, documents and the screen is treated as untrusted data.
-- Stop everything any time with the emergency shortcut (default Ctrl+Alt+Shift+S).
-- The virtual AI cursor has its own kill switch (Settings → PC control & safety);
-  OFF means off — enforced in the backend, overlay hidden too.
+- Websites, documents and screen text are treated as untrusted data.
+- Stop everything any time with the emergency shortcut (default `Ctrl+Alt+Shift+S`).
+- The repo ships **no API key, no character model, no personal data** — see “What is NOT included” below.
+
+## 📦 What is NOT included (on purpose)
+
+- **No API key.** You use your own free Gemini key from https://aistudio.google.com.
+- **No 3D character model.** The models used during development have licences that forbid
+  redistribution. Import your own MMD model (`.pmx`, or a `.zip` / folder containing one)
+  in the app: the first screen offers **Import my character**, or use
+  Settings → Character → Character Studio. Only use models whose licence allows your use.
+- No personal data, logs, memories or settings.
+
+## 🔗 Links
+
+- 🌐 Website: https://abxag.absup.dev (Download · Roadmap · Versions)
+- ⬇ Download: https://abxag.absup.dev/DownLoad/
+- 🗺 Roadmap: https://abxag.absup.dev/RoadMap/
+- 📦 All releases: https://github.com/ABxAG/ABxAG/releases
+- 👤 Creator: [@ABsUP](https://github.com/ABsUP)
