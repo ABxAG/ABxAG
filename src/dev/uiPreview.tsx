@@ -9,6 +9,8 @@ import "../index.css";
 import { TaskHud } from "../components/TaskHud";
 import { BootSequence } from "../components/BootSequence";
 import { CommandPalette } from "../components/CommandPalette";
+import { CyberFrame } from "../components/CyberFrame";
+import { CommandDeck } from "../components/CommandDeck";
 import type { AppEventsState } from "../lib/useAppEvents";
 import type { TaskView } from "../lib/appApi";
 
@@ -78,9 +80,11 @@ const events: AppEventsState = {
 const params = new URLSearchParams(location.search);
 const withDialog = params.get("dialog") !== "0";
 // Animated-UI preview states (default view unchanged): ?boot=1 shows the boot
-// overlay, ?palette=1 shows the command palette with sample commands.
+// overlay, ?palette=1 shows the command palette with sample commands,
+// ?deck=1 shows the wave-2 HUD frame + floating command deck.
 const showBoot = params.get("boot") === "1";
 const showPalette = params.get("palette") === "1";
+const showDeck = params.get("deck") === "1";
 const noop = () => {};
 const sampleCommands = [
   { id: "studio", title: "Character Studio", hint: "poses · physics · models", run: noop },
@@ -94,6 +98,26 @@ createRoot(document.getElementById("root")!).render(
     <TaskHud events={withDialog ? events : { ...events, confirmations: [] }} showHud emergencyShortcut="Control+Alt+Shift+S" />
     {showBoot && <BootSequence onDone={noop} />}
     {showPalette && <CommandPalette open onClose={noop} commands={sampleCommands} />}
+    {showDeck && <CyberFrame accent="celestial" />}
+    {showDeck && (
+      <CommandDeck
+        connection="listening"
+        sharing={false}
+        visionOn
+        cursorOn
+        theme="celestial"
+        notices={events.notices}
+        onToggleConnection={noop}
+        onShare={noop}
+        onUnshare={noop}
+        onVision={noop}
+        onCursor={noop}
+        onTheme={noop}
+        onOpenSettings={noop}
+        onOpenMemory={noop}
+        onOpenStudio={noop}
+      />
+    )}
   </div>,
 );
 

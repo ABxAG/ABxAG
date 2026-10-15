@@ -39,6 +39,8 @@ import { ABxAGSettings, DEFAULT_SETTINGS, loadSettings, saveSettings } from "./l
 import { ABxAGWakeWordDetector } from "./lib/wakeWord";
 import { BootSequence } from "./components/BootSequence";
 import { CommandPalette, type CommandDef } from "./components/CommandPalette";
+import { CyberFrame } from "./components/CyberFrame";
+import { CommandDeck } from "./components/CommandDeck";
 
 export default function App() {
   const [state, setState] = useState<LiveState>("disconnected");
@@ -715,6 +717,25 @@ export default function App() {
 
       {/* Animated UI: cyberpunk boot overlay + floating command palette */}
       {showBoot && <BootSequence onDone={() => setShowBoot(false)} />}
+      {/* Wave 2: HUD frame + floating command deck (delegates to existing handlers) */}
+      <CyberFrame accent={themeColor} />
+      <CommandDeck
+        connection={state}
+        sharing={isScreenSharing}
+        visionOn={screenVisionMode}
+        cursorOn={appSettings?.autonomy.virtualCursorEnabled ?? true}
+        theme={themeColor}
+        notices={events.notices}
+        onToggleConnection={() => void handleToggleConnection()}
+        onShare={() => void startScreenSharing()}
+        onUnshare={stopScreenSharing}
+        onVision={(v) => setScreenVisionMode(v)}
+        onCursor={(v) => handleAppSettingsChange({ autonomy: { virtualCursorEnabled: v } })}
+        onTheme={(id) => setThemeColor(id)}
+        onOpenSettings={() => openSettings("general")}
+        onOpenMemory={() => setShowMemoryDashboard(true)}
+        onOpenStudio={() => setShowStudio(true)}
+      />
       <AnimatePresence>
         {paletteOpen && (
           <CommandPalette
