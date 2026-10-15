@@ -37,6 +37,8 @@ import { useAppEvents } from "./lib/useAppEvents";
 import { setCharacterRealism } from "./character/materials/AnimeMaterial";
 import { ABxAGSettings, DEFAULT_SETTINGS, loadSettings, saveSettings } from "./lib/settingsStore";
 import { ABxAGWakeWordDetector } from "./lib/wakeWord";
+import { BootSequence } from "./components/BootSequence";
+import { CommandPalette, type CommandDef } from "./components/CommandPalette";
 
 export default function App() {
   const [state, setState] = useState<LiveState>("disconnected");
@@ -415,6 +417,43 @@ export default function App() {
     setSettingsSection(section);
     setShowSettings(true);
   };
+
+  // Animated UI: boot overlay + developer command palette (Ctrl/Cmd+K).
+  // Every palette command maps to an existing UI toggle — no new side effects.
+  const [showBoot, setShowBoot] = useState(true);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        const t = e.target as HTMLElement | null;
+        if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  const paletteCommands: CommandDef[] = [
+    { id: "studio", title: "Character Studio", hint: "poses · physics · models", keywords: ["character", "pose", "model"], run: () => setShowStudio(true) },
+    { id: "settings-ai", title: "Settings: AI & API keys", hint: "model · gemini key", keywords: ["settings", "keys", "gemini"], run: () => openSettings("ai") },
+    { id: "settings-voice", title: "Settings: Voice", hint: "wake word · mic", keywords: ["settings", "wake"], run: () => openSettings("voice") },
+    { id: "settings-agent", title: "Settings: PC control & safety", hint: "agent · permissions", keywords: ["settings", "safety"], run: () => openSettings("agent") },
+    { id: "settings-character", title: "Settings: Character", hint: "graphics quality", keywords: ["settings", "graphics"], run: () => openSettings("character") },
+    { id: "settings-system", title: "Settings: System", hint: "startup · updates", keywords: ["settings", "autostart"], run: () => openSettings("system") },
+    { id: "recalls", title: "Recalls", hint: "memory database", keywords: ["memory", "recollections"], run: () => setShowMemoryDashboard(true) },
+    { id: "topics", title: "Topics guide", hint: "sway themes", keywords: ["guide", "help"], run: () => setShowGuide(true) },
+    {
+      id: "share", title: isScreenSharing ? "Stop sharing screen" : "Share screen",
+      hint: "screen vision", keywords: ["screen", "vision", "share"],
+      run: () => { if (isScreenSharing) stopScreenSharing(); else void startScreenSharing(); },
+    },
+    {
+      id: "share-pause", title: isScreenSharingPaused ? "Resume screen sharing" : "Pause screen sharing",
+      hint: "freeze the shared frame", keywords: ["screen", "pause"],
+      run: () => setIsScreenSharingPaused((v) => !v),
+    },
+  ];
   const showSettingsRef = useRef<boolean>(false);
   useEffect(() => { showSettingsRef.current = showSettings; }, [showSettings]);
 
@@ -673,6 +712,18 @@ export default function App() {
           onActiveCharacterChange={(id) => setActiveCharacterId(id)}
         />
       )}
+
+      {/* Animated UI: cyberpunk boot overlay + floating command palette */}
+      {showBoot && <BootSequence onDone={() => setShowBoot(false)} />}
+      <AnimatePresence>
+        {paletteOpen && (
+          <CommandPalette
+            open={paletteOpen}
+            onClose={() => setPaletteOpen(false)}
+            commands={paletteCommands}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Ambient Background Gradients matching Frosted Glass theme */}
       <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-900/15 rounded-full blur-[120px] pointer-events-none" />

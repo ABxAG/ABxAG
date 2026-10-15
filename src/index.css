@@ -23,3 +23,73 @@
   animation: float 6s ease-in-out infinite;
 }
 
+/* ---- ABxAG cyberpunk animation system ----
+ * Static by default; every animation below is gated behind
+ * prefers-reduced-motion: no-preference. */
+
+.cyber-panel {
+  background: linear-gradient(180deg, rgba(20, 16, 38, 0.92), rgba(4, 4, 12, 0.94));
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  box-shadow: 0 0 50px rgba(34, 211, 238, 0.12), 0 24px 70px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.cyber-scanlines {
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 3px,
+    rgba(34, 211, 238, 0.025) 3px,
+    rgba(34, 211, 238, 0.025) 4px
+  );
+}
+
+.neon-text-cyan {
+  text-shadow: 0 0 18px rgba(34, 211, 238, 0.65), 0 0 46px rgba(34, 211, 238, 0.3);
+}
+
+@keyframes cyber-scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes grid-drift {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 0 64px, 64px 0; }
+}
+
+@keyframes neon-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@keyframes boot-bar {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+@keyframes caret-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-cyber-scan {
+    animation: cyber-scan 7s linear infinite;
+  }
+  .animate-grid-drift {
+    animation: grid-drift 12s linear infinite;
+  }
+  .animate-neon-pulse {
+    animation: neon-pulse 2.4s ease-in-out infinite;
+  }
+  .animate-boot-bar {
+    animation: boot-bar 1.6s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  }
+  .animate-caret-blink {
+    animation: caret-blink 1.1s steps(1) infinite;
+  }
+}
+

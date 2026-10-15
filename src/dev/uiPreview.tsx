@@ -7,6 +7,8 @@
 import { createRoot } from "react-dom/client";
 import "../index.css";
 import { TaskHud } from "../components/TaskHud";
+import { BootSequence } from "../components/BootSequence";
+import { CommandPalette } from "../components/CommandPalette";
 import type { AppEventsState } from "../lib/useAppEvents";
 import type { TaskView } from "../lib/appApi";
 
@@ -75,11 +77,23 @@ const events: AppEventsState = {
 
 const params = new URLSearchParams(location.search);
 const withDialog = params.get("dialog") !== "0";
+// Animated-UI preview states (default view unchanged): ?boot=1 shows the boot
+// overlay, ?palette=1 shows the command palette with sample commands.
+const showBoot = params.get("boot") === "1";
+const showPalette = params.get("palette") === "1";
+const noop = () => {};
+const sampleCommands = [
+  { id: "studio", title: "Character Studio", hint: "poses · physics · models", run: noop },
+  { id: "keys", title: "API keys", hint: "model · gemini key", run: noop },
+  { id: "share", title: "Share screen", hint: "screen vision", run: noop },
+];
 
 createRoot(document.getElementById("root")!).render(
   <div className="relative h-screen w-full overflow-hidden bg-[#020205] text-white">
     <div className="absolute left-10 top-8 text-sm font-semibold uppercase tracking-[0.4em] text-white/50">ABxAG · UI preview</div>
     <TaskHud events={withDialog ? events : { ...events, confirmations: [] }} showHud emergencyShortcut="Control+Alt+Shift+S" />
+    {showBoot && <BootSequence onDone={noop} />}
+    {showPalette && <CommandPalette open onClose={noop} commands={sampleCommands} />}
   </div>,
 );
 
