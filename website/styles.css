@@ -788,6 +788,24 @@ footer { border-top: 1px solid var(--border); margin-top: 56px; background: rgba
 }
 .dl-plat:hover { border-color: rgba(139, 92, 246, 0.5); transform: translateY(-3px); box-shadow: 0 14px 44px rgba(139, 92, 246, 0.16); }
 .dl-plat.rec { border-color: rgba(139, 92, 246, 0.6); box-shadow: 0 0 44px rgba(139, 92, 246, 0.16); }
+/* auto-detected OS card: green glow + badge + green primary button */
+.dl-plat.detected { border-color: rgba(52, 211, 153, 0.8); box-shadow: 0 0 46px rgba(52, 211, 153, 0.3), inset 0 0 30px rgba(52, 211, 153, 0.05); }
+.dl-plat.detected:hover { border-color: rgba(52, 211, 153, 0.95); box-shadow: 0 0 60px rgba(52, 211, 153, 0.4); }
+.dl-detect {
+  position: absolute; top: -13px; left: 14px; white-space: nowrap;
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; color: #06281c;
+  background: linear-gradient(92deg, #34d399, #22d3ee);
+  border-radius: 999px; padding: 3px 14px; box-shadow: 0 4px 18px rgba(52, 211, 153, 0.55);
+}
+.dl-plat.detected .dl-flag { left: auto; right: 14px; transform: none; }
+.dl-plat.detected .btn:not([aria-disabled="true"]) {
+  background: linear-gradient(92deg, #10b981, #06b6d4); color: #fff;
+  box-shadow: 0 8px 28px rgba(52, 211, 153, 0.4);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dl-detect { animation: detect-pulse 2.2s ease-in-out infinite; }
+  @keyframes detect-pulse { 0%, 100% { box-shadow: 0 4px 18px rgba(52, 211, 153, 0.55); } 50% { box-shadow: 0 4px 30px rgba(52, 211, 153, 0.9); } }
+}
 .dl-flag {
   position: absolute; top: -13px; left: 50%; transform: translateX(-50%); white-space: nowrap;
   font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; color: #fff;

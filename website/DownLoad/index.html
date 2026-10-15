@@ -67,7 +67,7 @@
         <p>Pick the build that fits your workflow. Versions below always match the live release feed.</p>
       </div>
       <div class="dl-plat-grid">
-        <div class="dl-plat rec">
+        <div class="dl-plat rec" data-os="windows">
           <span class="dl-flag">Recommended</span>
           <span class="dl-os"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M0 2.4 6.9 1.5v6.6H0V2.4Zm7.9-1.1L16 0v8.1H7.9V1.3ZM0 8.9h6.9v6.6L0 14.6V8.9Zm7.9.2H16V16l-8.1-1.1V9.1Z"/></svg></span>
           <h3>Windows</h3>
@@ -75,21 +75,21 @@
           <a class="btn primary small" id="dlPlatSetup" href="https://github.com/ABxAG/ABxAG/releases/latest">⬇ Download for Windows</a>
           <div class="dl-meta"><span id="dlPlatSetupMeta">Latest version</span></div>
         </div>
-        <div class="dl-plat">
+        <div class="dl-plat" data-os="portable">
           <span class="dl-os"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3.5" y="8" width="17" height="11" rx="2.5"/><path d="M9 8V5h6v3M7 13.5h4"/></svg></span>
           <h3>Portable</h3>
           <p class="muted">Windows, no installation</p>
           <a class="btn ghost small" id="dlPlatPort" href="https://github.com/ABxAG/ABxAG/releases/latest">Download Portable</a>
           <div class="dl-meta"><span id="dlPlatPortMeta">Runs from one file</span></div>
         </div>
-        <div class="dl-plat">
+        <div class="dl-plat" data-os="linux">
           <span class="dl-os"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="m7 9.5 3 3-3 3M12 15.5h5"/></svg></span>
           <h3>Linux <span class="rm-tag exp">Experimental</span></h3>
           <p class="muted">AppImage x64 · no PC control</p>
           <a class="btn ghost small" href="https://github.com/ABxAG/ABxAG/releases/download/v1.1.15/ABxAG-1.1.15-experimental-linux.AppImage">⬇ Download AppImage</a>
           <div class="dl-meta"><span>v1.1.15 · ≈163 MB</span></div>
         </div>
-        <div class="dl-plat soon">
+        <div class="dl-plat soon" data-os="macos">
           <span class="dl-os"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="4.5" y="4.5" width="15" height="10" rx="1.5"/><path d="M2.5 19.5h19"/></svg></span>
           <h3>macOS <span class="rm-tag dev">Planned</span></h3>
           <p class="muted">Not available yet</p>
@@ -243,6 +243,43 @@
           '<a href="https://github.com/ABxAG/ABxAG/releases" target="_blank" rel="noopener">GitHub Releases</a>.';
       }
     })();
+  </script>
+  <script>
+  /* Automatic OS detection: highlight the visitor's platform card with a
+     green glow + DETECTED badge + primary button. Other cards stay clickable.
+     Mobile OSes (Android/iOS) map to nothing — no desktop build fits them.
+     Preview override for testing: ?os=windows|linux|macos */
+  (function () {
+    'use strict';
+    try {
+      var q = null;
+      try { q = new URLSearchParams(window.location.search).get('os'); } catch (e) { q = null; }
+      var detectOS = function () {
+        if (q === 'windows' || q === 'linux' || q === 'macos') return q;
+        var ua = navigator.userAgent || '';
+        var plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+        if (/Win/i.test(plat) || /Windows/i.test(ua)) return 'windows';
+        if (/Android/i.test(ua)) return 'android';
+        if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
+        if (/Mac/i.test(plat) || /Macintosh|Mac OS/i.test(ua)) return 'macos';
+        if (/Linux/i.test(plat) || /Linux/i.test(ua)) return 'linux';
+        return 'unknown';
+      };
+      var os = detectOS();
+      var card = os && document.querySelector('.dl-plat[data-os="' + os + '"]');
+      if (!card) return;
+      card.classList.add('detected');
+      var badge = document.createElement('span');
+      badge.className = 'dl-detect';
+      badge.textContent = '\u2713 Detected';
+      card.insertBefore(badge, card.firstChild);
+      var btn = card.querySelector('.btn:not([aria-disabled="true"])');
+      if (btn) {
+        btn.classList.remove('ghost');
+        if (!btn.classList.contains('primary')) btn.classList.add('primary');
+      }
+    } catch (e) { /* no detection, cards stay as authored */ }
+  })();
   </script>
 </body>
 </html>
