@@ -2,6 +2,39 @@
  {
   "assets": [
    {
+    "name": "ABxAG-Portable-1.1.16.exe",
+    "size": 153764973,
+    "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.16/ABxAG-Portable-1.1.16.exe"
+   },
+   {
+    "name": "ABxAG-Setup-1.1.16.exe",
+    "size": 156524583,
+    "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.16/ABxAG-Setup-1.1.16.exe"
+   },
+   {
+    "name": "ABxAG-Setup-1.1.16.exe.blockmap",
+    "size": 161621,
+    "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.16/ABxAG-Setup-1.1.16.exe.blockmap"
+   },
+   {
+    "name": "latest.yml",
+    "size": 342,
+    "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.16/latest.yml"
+   }
+  ],
+  "date": "2026-10-16T01:30:23Z",
+  "notes": "## New — ZORION-style interactive HUD overlay\n\n- Floating always-on-top widget dashboard: status, mic, task, avatar, system, clock, emergency, conversation, quick actions (each toggleable).\n- Avatar mirrors your loaded 3D character live; toggle with Ctrl+Alt+O or Settings → Overlay (off by default).\n- Emergency stop + task pause/stop + quick actions (Downloads, RAM check, Chrome, screenshot) from the overlay.\n- Differential updates keep working (latest.yml + blockmap ship with this release).\n\n## Fixed\n\n- Verified: tsc clean, 97 agent + 8 character + 43 Python tests green, portable smoke test passed (backend :47130 OK, 96 agent tools, kill-switch OFF→ON).\n\n**Note:** PC agent bundle unchanged (same 96-tool agent as v1.1.15).",
+  "tag": "v1.1.16",
+  "title": null
+ },
+ {
+  "assets": [
+   {
+    "name": "ABxAG-1.1.15-experimental-linux.AppImage",
+    "size": 170628407,
+    "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.15/ABxAG-1.1.15-experimental-linux.AppImage"
+   },
+   {
     "name": "ABxAG-Portable-1.1.15.exe",
     "size": 153752328,
     "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.15/ABxAG-Portable-1.1.15.exe"
@@ -23,7 +56,7 @@
    }
   ],
   "date": "2026-10-12T01:53:42Z",
-  "notes": "## What's new — opencode-style auto-update\n\nThe updater is now a hybrid: electron-updater for speed + the custom updater for flexibility.\n\n**New**\n- Differential updates: only changed blocks download (latest.yml + .blockmap ship with this release) instead of the full 150MB every time.\n- Hash-verified installs: every update is sha512-checked before it touches your PC (previously size-only).\n- Silent quit-and-install for the installed build; portable keeps its guided wizard.\n- Kept: switch to ANY older version, mirror-feed fallback, and the same update buttons — no UI changes.\n\n**Fixed**\n- Slow full re-downloads on every update — fixed with blockmap differentials.\n- Weak size-only download check — fixed with sha512 verification.\n- Verified: tsc clean, 80 agent + 8 character + 43 Python tests green (incl. differential stage + fallback tests), portable smoke test passed (96 agent tools).\n\n**Note:** PC agent bundle unchanged; installer carries the same 96-tool agent. First release to publish latest.yml — differential downloads activate from the NEXT update onward.",
+  "notes": "## What's new ??? opencode-style auto-update\r\n\r\nThe updater is now a hybrid: electron-updater for speed + the custom updater for flexibility.\r\n\r\n**New**\r\n- Differential updates: only changed blocks download (latest.yml + .blockmap ship with this release) instead of the full 150MB every time.\r\n- Hash-verified installs: every update is sha512-checked before it touches your PC (previously size-only).\r\n- Silent quit-and-install for the installed build; portable keeps its guided wizard.\r\n- Kept: switch to ANY older version, mirror-feed fallback, and the same update buttons ??? no UI changes.\r\n\r\n**Fixed**\r\n- Slow full re-downloads on every update ??? fixed with blockmap differentials.\r\n- Weak size-only download check ??? fixed with sha512 verification.\r\n- Verified: tsc clean, 80 agent + 8 character + 43 Python tests green (incl. differential stage + fallback tests), portable smoke test passed (96 agent tools).\r\n\r\n**Note:** PC agent bundle unchanged; installer carries the same 96-tool agent. First release to publish latest.yml ??? differential downloads activate from the NEXT update onward.\r\n\n\n---\nEXPERIMENTAL Linux build: ABxAG-1.1.15-experimental-linux.AppImage (x64, tested headless on Ubuntu via GitHub Actions). Chat/voice/memory UI works; PC control (desktop agent) is Windows-only and stays disabled on Linux. No auto-update for this asset; the Windows feed (releases.json/latest.yml) is unchanged.\r\n",
   "tag": "v1.1.15",
   "title": null
  },
