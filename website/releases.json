@@ -2,6 +2,34 @@
  {
   "assets": [
    {
+    "name": "ABxAG-Portable-1.1.18.exe",
+    "size": 127301474,
+    "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.18/ABxAG-Portable-1.1.18.exe"
+   },
+   {
+    "name": "ABxAG-Setup-1.1.18.exe",
+    "size": 130061042,
+    "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.18/ABxAG-Setup-1.1.18.exe"
+   },
+   {
+    "name": "ABxAG-Setup-1.1.18.exe.blockmap",
+    "size": 134432,
+    "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.18/ABxAG-Setup-1.1.18.exe.blockmap"
+   },
+   {
+    "name": "latest.yml",
+    "size": 342,
+    "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.18/latest.yml"
+   }
+  ],
+  "date": "2026-10-16T17:33:31Z",
+  "notes": "## New — lighter + steadier hands\n\n- **Virtual mouse removed.** Dual-cursor broke reliable working, so it's gone end to end (12 tools, overlay, endpoint, setting, prompt rule). The AI now drives your physical mouse with exact text labels, yields the moment you touch the PC, and risky actions go through confirmations + emergency stop. Frozen agent: 96 -> 84 tools.\n- **HUD overlay that works.** The avatar mirror never delivered frames ('no frame yet' forever) — replaced with a self-contained 2D hologram (eyes follow your pointer, mouth moves as she speaks). Conversation falls back to the command log; mic shows an honest link state.\n- **Lightweight installer.** Build-only + frontend-only trees out of the package, Chromium locales en-US only, koffi win32-x64 only: node_modules 141 -> 33MB, Setup 156 -> 130MB, production boot 7.3s -> 2.3s.\n- Differential updates keep working (latest.yml + blockmap ship with this release).\n\n## Verified\n\n- tsc clean, 99 agent + 8 character + 32 Python tests green, portable smoke test passed (backend :47130 OK, 84 tools, zero virtual names, emergency stop OK).\n\n**Note:** PC agent bundle rebuilt for this release (84-tool agent, dual-cursor free).",
+  "tag": "v1.1.18",
+  "title": null
+ },
+ {
+  "assets": [
+   {
     "name": "ABxAG-Portable-1.1.17.exe",
     "size": 153765917,
     "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.17/ABxAG-Portable-1.1.17.exe"
