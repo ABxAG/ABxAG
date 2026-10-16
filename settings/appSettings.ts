@@ -29,9 +29,6 @@ export interface AppSettings {
     conflictWaitSec: number;
     emergencyShortcut: string;
     showTaskHud: boolean;
-    /** Dual-cursor: the red virtual (AI) pointer works in the background.
-     *  Off = every AI click goes through the user's physical mouse path. */
-    virtualCursorEnabled: boolean;
   };
   voice: {
     voiceName: string;
@@ -161,7 +158,6 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     conflictWaitSec: 6,
     emergencyShortcut: "Control+Alt+Shift+S",
     showTaskHud: true,
-    virtualCursorEnabled: true,
   },
   voice: {
     voiceName: "Aoede",
@@ -283,7 +279,6 @@ export function normalizeSettings(input: unknown, base: AppSettings = DEFAULT_AP
       conflictWaitSec: clamp(a.conflictWaitSec, 1, 30, d.autonomy.conflictWaitSec),
       emergencyShortcut: typeof a.emergencyShortcut === "string" && /^[A-Za-z0-9+]{3,40}$/.test(a.emergencyShortcut) ? a.emergencyShortcut : d.autonomy.emergencyShortcut,
       showTaskHud: bool(a.showTaskHud, d.autonomy.showTaskHud),
-      virtualCursorEnabled: bool(a.virtualCursorEnabled, d.autonomy.virtualCursorEnabled),
     },
     voice: {
       voiceName: typeof v.voiceName === "string" && /^[A-Za-z]{2,24}$/.test(v.voiceName) ? v.voiceName : d.voice.voiceName,

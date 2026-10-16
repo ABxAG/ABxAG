@@ -126,7 +126,7 @@ export interface AppSettings {
     autoDndMeetings: boolean;
     autoDndRecording: boolean;
   };
-  autonomy: { maxSteps: number; conflictWaitSec: number; emergencyShortcut: string; showTaskHud: boolean; virtualCursorEnabled: boolean };
+  autonomy: { maxSteps: number; conflictWaitSec: number; emergencyShortcut: string; showTaskHud: boolean };
   voice: { voiceName: string; style: "natural" | "anime"; pitch: number; bargeIn: boolean; speakTaskUpdates: "all" | "important" | "none" };
   companion: {
     enabled: boolean;

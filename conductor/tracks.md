@@ -5,4 +5,5 @@
 - [linux-exp](./tracks/linux-exp/index.md) — Experimental Linux AppImage (v1.1.15, no agent)
 - [animated-ui](./tracks/animated-ui/index.md) — Animated cyberpunk UI (boot + command palette)
 - [zorion-overlay](./tracks/zorion-overlay/index.md) — ZORION-style interactive HUD overlay (9 widgets, 3D avatar mirror)
+- [dual-cursor-removal](./tracks/dual-cursor-removal/index.md) — Full removal of the virtual mouse (physical-mouse path only)
 - [site-hud-content](./tracks/site-hud-content/index.md) — Website content: HUD overlay spotlight, Era 6, FAQ

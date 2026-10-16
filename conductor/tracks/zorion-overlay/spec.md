@@ -7,19 +7,19 @@ natively in ABxAG (Electron + React) instead of porting code.
 
 ## 1. Goal
 
-A **fully interactive, always-on-top HUD overlay window** (ZORION parity) that
-lives beside — not instead of — the existing non-interactive neon virtual
-cursor (`electron/virtual-cursor.cjs`, which stays untouched and click-through).
+A **fully interactive, always-on-top HUD overlay window** (ZORION parity).
+(The old non-interactive neon virtual-cursor overlay was removed entirely —
+see `../dual-cursor-removal/`.)
 
 ## 2. Behaviour (ZORION parity, ABxAG-mapped)
 
 - Separate `BrowserWindow`: frameless, `alwaysOnTop` (`screen-saver` level),
   `skipTaskbar`,movable/resizable by the user; **interactive** (`clickThrough:
-  false` default) — the opposite of the virtual-cursor overlay.
+  false` default).
 - **9 widgets**, each independently toggleable, polling only while visible:
   `status` (backend `:47130` + agent `:8765` health/tools count),
   `mic` (voice LiveState relayed from the main window),
-  `task` (`/api/virtual-cursor` + `/api/goals`),
+  `task` (`/api/tasks` active tasks with pause/stop),
   `avatar` (**live mirror of the loaded 3D character**, see §4),
   `system` (backend/agent round-trip latency + catalogue counts, no new endpoint),
   `clock` (local time, no polling),
@@ -48,8 +48,8 @@ New `SettingsSection "overlay"` ("Overlay", `MonitorSmartphone` icon) in
   `hotkey` ("Control+Alt+O", validated like `emergencyShortcut`),
   `widgets` (9 booleans, all default true).
 - Old settings files (no `overlay` key) → defaults; non-boolean/non-number
-  patches rejected, previous value kept (same contract as
-  `virtualCursorEnabled`).
+  patches rejected, previous value kept (same contract as the other
+  server-side settings).
 
 ## 4. Avatar = ZORION-style 2D hologram (user requirement, revised)
 
@@ -78,6 +78,6 @@ frame under prefers-reduced-motion.
 - `npm run lint` clean; `node --check` on new/changed `.cjs`.
 - New `tests/overlaySettings.test.ts` green + registered in `test:agent`.
 - Dev smoke (`npm run dev` + Electron): Overlay OFF by default; ON →
-  window appears, widgets populate, `Ctrl+Alt+O` toggles, avatar shows the
-  loaded character, emergency button stops tasks, fullscreen hides it,
-  Settings → Overlay persists across restart.
+  window appears, widgets populate, `Ctrl+Alt+O` toggles, hologram avatar
+  renders with eye-track + speech anim, emergency button stops tasks,
+  fullscreen hides it, Settings → Overlay persists across restart.

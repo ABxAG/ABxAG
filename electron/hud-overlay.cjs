@@ -2,10 +2,9 @@
 /* ABxAG HUD overlay — ZORION-style fully interactive widget dashboard.
  *
  * Separate always-on-top BrowserWindow loading the same app with `?hud=1`
- * (standalone HudOverlay React root). Unlike the virtual-cursor overlay
- * (transparent, click-through, non-interactive), this window is interactive
- * by default and hosts 9 widgets + a live 3D-avatar mirror relayed from the
- * main window via `hud:sync` IPC.
+ * (standalone HudOverlay React root). This window is interactive by default
+ * and hosts 9 widgets + a local 2D hologram avatar; main-window state
+ * arrives via `hud:sync` IPC.
  */
 
 const { BrowserWindow, ipcMain, screen } = require('electron');

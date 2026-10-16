@@ -34,7 +34,7 @@ jobs:
       - name: Electron syntax check
         run: |
           node --check electron/main.cjs
-          node --check electron/virtual-cursor.cjs
+          node --check electron/hud-overlay.cjs
           node --check electron/companion.cjs
           node --check electron/preload.cjs
           node --check electron/updates.cjs

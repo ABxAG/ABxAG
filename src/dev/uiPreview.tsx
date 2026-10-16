@@ -104,14 +104,12 @@ createRoot(document.getElementById("root")!).render(
         connection="listening"
         sharing={false}
         visionOn
-        cursorOn
         theme="celestial"
         notices={events.notices}
         onToggleConnection={noop}
         onShare={noop}
         onUnshare={noop}
         onVision={noop}
-        onCursor={noop}
         onTheme={noop}
         onOpenSettings={noop}
         onOpenMemory={noop}
