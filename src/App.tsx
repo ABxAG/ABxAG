@@ -460,7 +460,7 @@ export default function App() {
     { id: "settings-voice", title: "Settings: Voice", hint: "wake word · mic", keywords: ["settings", "wake"], run: () => openSettings("voice") },
     { id: "settings-agent", title: "Settings: PC control & safety", hint: "agent · permissions", keywords: ["settings", "safety"], run: () => openSettings("agent") },
     { id: "settings-character", title: "Settings: Character", hint: "graphics quality", keywords: ["settings", "graphics"], run: () => openSettings("character") },
-    { id: "settings-system", title: "Settings: System", hint: "startup · updates", keywords: ["settings", "autostart"], run: () => openSettings("system") },
+    { id: "settings-system", title: "Settings: System", hint: "startup · updates", keywords: ["settings", "autostart", "update", "upgrade"], run: () => openSettings("system") },
     { id: "recalls", title: "Recalls", hint: "memory database", keywords: ["memory", "recollections"], run: () => setShowMemoryDashboard(true) },
     { id: "topics", title: "Topics guide", hint: "sway themes", keywords: ["guide", "help"], run: () => setShowGuide(true) },
     {

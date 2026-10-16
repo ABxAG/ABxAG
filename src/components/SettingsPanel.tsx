@@ -17,7 +17,7 @@ import {
 import type { ABxAGSettings } from "../lib/settingsStore";
 import { api, LOCKED_CAPABILITIES, type AppSettings, type AppSettingsPatch, type Decision, type ModelCatalogue, type PermissionsView, type MessageConfirmationMode } from "../lib/appApi";
 import { ModelSelectorPanel } from "./ModelSelector";
-import { AboutUpdates } from "./AboutUpdates";
+import { AboutUpdates, UpdatesSection } from "./AboutUpdates";
 
 export type SettingsSection = "general" | "ai" | "voice" | "agent" | "overlay" | "privacy" | "presence" | "character" | "system" | "about";
 
@@ -425,6 +425,9 @@ function SystemSection({ app, patch, onRestartOnboarding }: { app: AppSettings; 
 
   return (
     <div className="space-y-5">
+      <Group title="Update" hint="Auto downloads new versions in the background · Manual only checks when you ask.">
+        <UpdatesSection app={app} onPatch={patch} />
+      </Group>
       <Group title="Desktop control agent">
         <Row label={agent.online ? "Running" : "Not running"} description={agent.online ? `${agent.toolCount ?? 0} PC tools available` : "ABxAG starts it automatically. If it stays offline, restart ABxAG."}>
           <span className={`block h-2.5 w-2.5 rounded-full ${agent.online ? "bg-emerald-400 animate-pulse" : "bg-rose-400"}`} />
