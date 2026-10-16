@@ -4,15 +4,16 @@
 
 1. **Server settings** (`settings/appSettings.ts`): add `overlay` block to the
    `AppSettings` interface + `DEFAULT_APP_SETTINGS` + `normalizeSettings`
-   (clamp opacity 0.4–1, validate hotkey regex, bool-coerce widgets) — mirror
-   the `autonomy.virtualCursorEnabled` pattern. Mirror the type in
-   `src/lib/appApi.ts` (`AppSettings` + patch type).
-2. **Tests** (`tests/overlaySettings.test.ts`, mirror
-   `virtualCursorSetting.test.ts`): defaults OFF for old files, patch
+   (clamp opacity 0.4–1, validate hotkey regex, bool-coerce widgets) — same
+   validation-helper pattern as the other server-side blocks. Mirror the
+   type in `src/lib/appApi.ts` (`AppSettings` + patch type).
+2. **Tests** (`tests/overlaySettings.test.ts`, same style as the other
+   settings tests): defaults OFF for old files, patch
    round-trip, rejection of bad types, widget defaults all-true. Register in
    `package.json` `test:agent` script.
-3. **Shell window** (`electron/hud-overlay.cjs`, new; structure mirrors
-   `virtual-cursor.cjs`): `createHudOverlay(origin)` loads
+3. **Shell window** (`electron/hud-overlay.cjs`, new; same frameless
+   always-on-top BrowserWindow pattern as the other shell windows):
+   `createHudOverlay(origin)` loads
    `SERVER_ORIGIN + '?hud=1'`; `destroyHudOverlay`, `setHudVisible`,
    `applyHudSettings` (opacity, alwaysOnTop, compact/full size, click-through
    flag); fullscreen auto-hide reusing companion's detection; `Ctrl+Alt+O`
@@ -21,11 +22,10 @@
    `hud:backend` relay (overlay → `sendToBackend`); destroy on quit.
 4. **Renderer HUD** (`src/components/HudOverlay.tsx`, new): standalone root
    rendered by `App.tsx` when `?hud=1` (no main UI in that window). 9 widget
-   subcomponents, 2–4s HTTP polling (`/api/config`, `/api/agent-health`,
-   `/api/virtual-cursor`, `/api/goals`, `/api/cognition/status`), clock local,
-   relay state via `window.require('electron').ipcRenderer` (same
-   `nodeIntegration` posture as the virtual-cursor overlay). Compact mode
-   renders status + avatar + emergency only.
+   subcomponents, 3s HTTP polling (`/api/config`, `/api/agent-health`,
+   `/api/tasks`, `/api/logs/commands`), clock local, relay state via the
+   `abxag.hud` preload bridge (contextIsolation, no nodeIntegration).
+   Compact mode renders status + avatar + emergency only.
 5. **Main-window sync** (`App.tsx`): `useHudSync` hook — every 2s pushes
    `{ connection, notices tail }` via `ipcRenderer.send('hud:sync', …)`
    (Electron only, no-op in browser dev). Mic widget shows LINK IDLE with a
@@ -41,9 +41,9 @@
 
 ## Risks
 
-- Avatar capture blank without `preserveDrawingBuffer` → step 5 makes it
-  explicit; overlay shows the character portrait fallback until the first
-  frame arrives.
+- Hologram is fully local canvas: renders even with no backend link and no
+  character loaded; conversation degrades to `/api/logs/commands`, mic to
+  LINK IDLE.
 - `Ctrl+Alt+O` taken by another app → warn in console, Settings still
   toggles the window (same graceful pattern as emergency shortcut).
 - Extra polling load → widgets share one 3s interval, paused when hidden.

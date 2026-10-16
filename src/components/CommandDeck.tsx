@@ -5,7 +5,6 @@ import {
   Monitor,
   Eye,
   EyeOff,
-  MousePointer2,
   Palette,
   Settings as SettingsIcon,
   Brain,
@@ -26,14 +25,12 @@ export interface CommandDeckProps {
   connection: LiveState;
   sharing: boolean;
   visionOn: boolean;
-  cursorOn: boolean;
   theme: string;
   notices: LogNotice[];
   onToggleConnection: () => void;
   onShare: () => void;
   onUnshare: () => void;
   onVision: (v: boolean) => void;
-  onCursor: (v: boolean) => void;
   onTheme: (id: string) => void;
   onOpenSettings: () => void;
   onOpenMemory: () => void;
@@ -99,10 +96,6 @@ export function CommandDeck(props: CommandDeckProps) {
               <button className={actionBtn} onClick={() => props.onVision(!props.visionOn)} title="Toggle screen vision">
                 {props.visionOn ? <Eye size={11} className="text-cyan-300" /> : <EyeOff size={11} className="text-slate-400" />}
                 Vision {props.visionOn ? "on" : "off"}
-              </button>
-              <button className={actionBtn} onClick={() => props.onCursor(!props.cursorOn)} title="Virtual AI cursor kill-switch">
-                <MousePointer2 size={11} className={props.cursorOn ? "text-emerald-300" : "text-rose-400"} />
-                Cursor {props.cursorOn ? "on" : "off"}
               </button>
               <button className={actionBtn} onClick={props.onOpenSettings} title="Open settings">
                 <SettingsIcon size={11} /> Settings

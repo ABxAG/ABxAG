@@ -155,19 +155,6 @@ DESKTOP_TOOL_NAMES = [
     "moveDesktopIcon",
     # File Explorer selection
     "selectFiles",
-    # dual-cursor: virtual (software) pointer — never moves the OS cursor
-    "virtualMove",
-    "virtualClick",
-    "virtualRightClick",
-    "virtualDoubleClick",
-    "virtualType",
-    "virtualScroll",
-    "virtualInspect",
-    "virtualFind",
-    "virtualUiAction",
-    "virtualStatus",
-    "pauseVirtual",
-    "resumeVirtual",
 ]
 
 
@@ -196,7 +183,6 @@ _MODULE_NAMES = [
     "tools_input_ext",
     "tools_desktop_icons",
     "tools_explorer",
-    "tools_virtual_cursor",
 ]
 
 

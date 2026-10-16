@@ -84,8 +84,8 @@ Site pages (all PascalCase): `/DownLoad/`, `/RoadMap/` (+ `/`, static
 5. Verify: exe FileVersionInfo = new version; runtime exe FileDescription =
    ABxAG; `electron-updater` present under `win-unpacked/.../node_modules`;
    fresh `dist/assets/index-*.js` newer than sources; portable smoke test by
-   PID only (backend `:47130` OK, agent 96 tools, kill-switch OFF→ON via
-   `/api/virtual-cursor`, kill ONLY your tree afterwards).
+   PID only (backend `:47130` OK, agent 84 tools, kill ONLY your tree
+   afterwards).
 6. `gh release create v<V> <setup> <portable> latest.yml <setup>.blockmap
    --title "ABxAG v<V>" --notes "<New / Fixed sections>" --target DEV`;
    then `git add` (intended files only, NOT `-A`) `&& git commit && git push
@@ -99,11 +99,12 @@ Site pages (all PascalCase): `/DownLoad/`, `/RoadMap/` (+ `/`, static
 
 ## 4. Current feature state (v1.1.15, all shipped + verified)
 
-- **Dual-cursor co-pilot:** 12 virtual tools (96 total in frozen agent),
-  neon overlay with live poll, `Ctrl+Alt+P` pause. Kill switch:
-  Settings → PC control & safety → Virtual AI cursor
-  (`autonomy.virtualCursorEnabled`, default ON, gated in `callDesktopAgent`,
-  overlay hides when OFF). Track: `conductor/tracks/dual-cursor/`.
+- **Dual-cursor REMOVED (DEV after v1.1.17):** the virtual mouse is deleted
+  end to end (12 tools, overlay, endpoint, setting, prompt rule) — it broke
+  reliable working. Frozen agent now carries **84 tools**; the AI uses the
+  physical mouse with confirmations + emergency stop.
+  Track: `conductor/tracks/dual-cursor-removal/` (old
+  `conductor/tracks/dual-cursor/` kept as history).
 - **updater-v2 hybrid:** `electron-updater` dep + `publish: github` in
   `electron-builder.public.yml`. Latest-version path = differential
   (sha512-verified, `quitAndInstall`); older-version/mirror/portable paths

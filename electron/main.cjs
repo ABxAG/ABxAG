@@ -865,23 +865,6 @@ function startShell() {
   updateTrayMenu();
   void backendRequest('GET', '/api/app-settings').then(applyShellSettings);
 
-  // Dual-cursor: virtual (AI) cursor overlay — physical mouse stays user's.
-  try {
-    const vc = require('./virtual-cursor.cjs');
-    vc.createOverlay();
-    vc.startPolling(SERVER_ORIGIN);
-    // Pause switch: Ctrl+Alt+P pauses virtual cursor, emergency still Ctrl+Alt+Shift+S.
-    try {
-      globalShortcut.register('Control+Alt+P', () => {
-        const cur = vc.getVirtualCursor();
-        vc.updateVirtualCursor({ status: cur.status === 'paused' ? 'idle' : 'paused', paused: cur.status !== 'paused' });
-        sendToBackend({ type: 'virtual.pause-toggle' });
-      });
-    } catch {}
-  } catch (error) {
-    console.warn('[shell] virtual cursor overlay unavailable:', error && error.message);
-  }
-
   // HUD overlay: ZORION-style interactive widget dashboard (Settings → Overlay).
   try {
     const hud = require('./hud-overlay.cjs');

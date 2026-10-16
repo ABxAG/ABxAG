@@ -741,14 +741,12 @@ export default function App() {
         connection={state}
         sharing={isScreenSharing}
         visionOn={screenVisionMode}
-        cursorOn={appSettings?.autonomy.virtualCursorEnabled ?? true}
         theme={themeColor}
         notices={events.notices}
         onToggleConnection={() => void handleToggleConnection()}
         onShare={() => void startScreenSharing()}
         onUnshare={stopScreenSharing}
         onVision={(v) => setScreenVisionMode(v)}
-        onCursor={(v) => handleAppSettingsChange({ autonomy: { virtualCursorEnabled: v } })}
         onTheme={(id) => setThemeColor(id)}
         onOpenSettings={() => openSettings("general")}
         onOpenMemory={() => setShowMemoryDashboard(true)}

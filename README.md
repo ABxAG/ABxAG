@@ -38,7 +38,7 @@
 | 🖐 **Hands** | 96 local PC tools (apps, files, input, browser, clipboard) gated by confirmations, an emergency stop and a permission board |
 | 🧠 **Memory & mind** | Local cognition runtime: episodic memory, goals, learned skills, curiosity and presence |
 | 🧍 **Body** | three.js character engine — import any `.pmx / .vrm / .glb / .fbx / .obj` model, `.zip` or folder (Character Studio included) |
-| 🖱 **Dual-cursor co-pilot** | Her own neon-red virtual cursor works in background windows while your mouse stays 100% yours (`Ctrl+Alt+P` pauses; Settings → PC control & safety turns her off completely) |
+| 🖱 **Reliable hands** | She drives your physical mouse with exact text labels, pauses the moment you touch the PC, and every risky action goes through confirmations + emergency stop |
 | 🔄 **Auto-update** | Hybrid updater: fast differential installs for the current version, one-click switch to any older version, mirror-feed fallback |
 
 ## ⬇ Download

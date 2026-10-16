@@ -319,8 +319,6 @@ function AgentSection({ app, patch }: { app: AppSettings; patch: (p: AppSettings
       <Group title="While ABxAG works">
         <ToggleRow label="Show the task panel" description="See the plan, each step and pause / stop buttons while ABxAG uses your PC. Approval requests always appear."
           checked={app.autonomy.showTaskHud} onChange={(v) => patch({ autonomy: { showTaskHud: v } })} />
-        <ToggleRow label="Virtual AI cursor" description="Let ABxAG work with its own red cursor in the background while you use the PC. Turn off to keep every AI click on your physical mouse."
-          checked={app.autonomy.virtualCursorEnabled ?? true} onChange={(v) => patch({ autonomy: { virtualCursorEnabled: v } })} />
         <SliderRow label="Step limit per task" description="A task that needs more actions than this is stopped. Applies to new tasks." value={app.autonomy.maxSteps} min={5} max={80} onChange={(v) => patch({ autonomy: { maxSteps: v } })} />
         <SliderRow label="Wait when you use the mouse" description="How long ABxAG pauses when you move the mouse or type during a task." value={app.autonomy.conflictWaitSec} min={1} max={30} unit=" s" onChange={(v) => patch({ autonomy: { conflictWaitSec: v } })} />
         <Row label="Emergency stop shortcut" description="Stops every task immediately, even when ABxAG is hidden.">

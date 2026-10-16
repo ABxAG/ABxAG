@@ -23,4 +23,4 @@ toggle hotkey `Ctrl+Alt+O`.
 
 ## Non-goals
 No ZORION brain/voice/memory port; no new backend endpoints; no hotkey
-editing UI; virtual-cursor overlay untouched.
+editing UI. (Note: the old virtual-cursor overlay was later removed entirely — see PRD/dual-cursor-removal.md.)

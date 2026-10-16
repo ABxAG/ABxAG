@@ -77,7 +77,6 @@ export function HudOverlay() {
   const [backendOk, setBackendOk] = useState<boolean | null>(null);
   const [tools, setTools] = useState<number | null>(null);
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
-  const [vcursor, setVcursor] = useState<{ status?: string; task?: string } | null>(null);
   const [tasks, setTasks] = useState<TaskView[]>([]);
   const [logLines, setLogLines] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -106,10 +105,9 @@ export function HudOverlay() {
     const tick = async () => {
       const t0 = performance.now();
       try {
-        const [config, health, vc, list, logs] = await Promise.all([
+        const [config, health, list, logs] = await Promise.all([
           fetch("/api/config", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
           fetch("/api/agent-health", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
-          fetch("/api/virtual-cursor", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
           api.tasks(5).catch(() => [] as TaskView[]),
           fetch("/api/logs/commands", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
         ]);
@@ -118,7 +116,6 @@ export function HudOverlay() {
         const count = Number(health?.tools ?? health?.toolCount ?? health?.count);
         setTools(Number.isFinite(count) ? count : null);
         setLatencyMs(Math.round(performance.now() - t0));
-        setVcursor(vc && typeof vc === "object" ? { status: String(vc.status ?? ""), task: String(vc.task ?? "") } : null);
         setTasks(Array.isArray(list) ? list : []);
         const lines = Array.isArray(logs?.lines) ? logs.lines as unknown[] : [];
         setLogLines(lines.map((l) => String(l).slice(0, 160)).filter(Boolean).slice(-4).reverse());
@@ -234,11 +231,6 @@ export function HudOverlay() {
 
       {show("task") && (
         <Card title="Task" icon={<ListTodo size={iconSize} />}>
-          {vcursor?.task || vcursor?.status ? (
-            <div className="mb-1 truncate font-mono text-[11px] text-slate-300">
-              {(vcursor.status ?? "idle").toUpperCase()}{vcursor.task ? ` • ${vcursor.task}` : ""}
-            </div>
-          ) : null}
           {liveTasks.length === 0 ? (
             <div className="font-mono text-[10px] text-slate-500">no active task</div>
           ) : (
