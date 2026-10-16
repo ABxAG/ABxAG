@@ -21,6 +21,7 @@
     <nav>
       <a href="#features" data-spy="features">Features</a>
       <a href="#dual-cursor" data-spy="dual-cursor">Dual-cursor</a>
+      <a href="#hud-overlay" data-spy="hud-overlay">HUD overlay</a>
       <a href="#models" data-spy="models">Characters</a>
       <a href="#versions" data-spy="versions">Versions</a>
       <a href="./RoadMap/">Roadmap</a>
@@ -110,7 +111,7 @@
         </div>
         <div class="card"><div class="neon-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9.5 2.5A2.5 2.5 0 0 1 12 5v1.5a3.5 3.5 0 0 1 2 6.3V15a4 4 0 0 1-8 .5"/><path d="M12 2.5V5M5 13.5c-1.5 0-2.5 1.2-2.5 2.7 0 2.3 2.7 2.8 4.5 2.8h4"/></svg></div><h3>Memory &amp; initiative</h3><p>Episodic memory, goals, learned skills and a polite sense of when to speak up — all processed locally.</p></div>
         <div class="card"><div class="neon-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="4.5" y="10" width="15" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.6"/></svg></div><h3>Private by design</h3><p>Your Gemini key is encrypted with Windows DPAPI and never reaches the web page. All AI calls go through your local backend.</p></div>
-        <div class="card"><div class="neon-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div><h3>You stay in charge</h3><p>Emergency stop shortcut, permission toggles, virtual-cursor kill switch, and “stop / cancel” always wins.</p></div>
+        <div class="card"><div class="neon-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div><h3>You stay in charge</h3><p>Emergency stop shortcut, permission toggles, virtual-cursor kill switch, a one-click stop on the HUD overlay, and “stop / cancel” always wins.</p></div>
       </div>
     </section>
 
@@ -130,6 +131,24 @@
 <span class="kw">virtualFind</span>  { <span class="st">"query"</span>: <span class="st">"Name field"</span>, <span class="st">"window_title"</span>: <span class="st">"Notepad"</span> }
 <span class="kw">virtualUiAction</span> { <span class="st">"action"</span>: <span class="st">"set_value"</span>, <span class="st">"value"</span>: <span class="st">"Hi from ABxAG"</span> }
 <span class="fn">→ red cursor glides there · your mouse never moved · physical cursor untouched</span></pre>
+      </div>
+    </section>
+
+    <section id="hud-overlay" class="section">
+      <div class="sec-head">
+        <h2>HUD <span class="grad">overlay</span></h2>
+        <p>Her floating dashboard. Nine clickable widgets on an always-on-top window — including a live mirror of your loaded 3D character. Off by default, one keypress away.</p>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="num">01</div><h3>Nine widgets, your pick</h3><p>Status, mic, task, avatar, system, clock, emergency, conversation and quick actions — each toggles independently in Settings → Overlay.</p></div>
+        <div class="card"><div class="num">02</div><h3>She shows herself</h3><p>The avatar widget mirrors whichever 3D character you loaded, with a glow while she speaks. Pause tasks, stop everything, or fire a quick action without opening the app.</p></div>
+        <div class="card"><div class="num">03</div><h3>Out of the way by design</h3><p>Auto-hides for fullscreen games and apps, collapses to a compact mode, and respects the same kill switch as everything else.</p></div>
+      </div>
+      <div class="term">
+        <div class="term-bar"><i></i><i></i><i></i><span>ABxAG — HUD overlay</span></div>
+<pre><span class="cm"># press Ctrl + Alt + O anywhere, or…</span>
+<span class="kw">Settings</span>  →  <span class="st">"Overlay"</span>  →  <span class="fn">Enable overlay</span>
+<span class="cm"># …and she floats above every window, clickable, dismissible, yours.</span></pre>
       </div>
     </section>
 
