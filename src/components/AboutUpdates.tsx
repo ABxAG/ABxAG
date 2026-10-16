@@ -78,7 +78,7 @@ function statusText(state: UpdateState): string {
   }
 }
 
-export function AboutUpdates({ app, onPatch }: { app: AppSettings | null; onPatch: (patch: AppSettingsPatch) => void }) {
+export function UpdatesSection({ app, onPatch }: { app: AppSettings | null; onPatch: (patch: AppSettingsPatch) => void }) {
   const bridge = useUpdatesBridge();
   const desktop = isDesktopWithUpdates();
   const [state, setState] = useState<UpdateState>(IDLE_STATE);
@@ -141,38 +141,8 @@ export function AboutUpdates({ app, onPatch }: { app: AppSettings | null; onPatc
   };
 
   return (
-    <div className="space-y-5">
-      <section className="space-y-2">
-        <div>
-          <h4 className="font-mono text-[10px] uppercase tracking-widest text-slate-400">ABxAG</h4>
-        </div>
-        <div className="divide-y divide-white/5 rounded-xl border border-white/10 bg-white/[0.03]">
-          <div className="flex items-center justify-between gap-4 px-4 py-3">
-            <div className="text-xs text-slate-100">Version</div>
-            <span className="font-mono text-[11px] text-slate-300">{typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : current}</span>
-          </div>
-          <LinkRow label="Website" url={ABOUT_LINKS.website} />
-          <LinkRow label="Mirror" url={ABOUT_LINKS.mirror} />
-          <LinkRow label="Source code" url={ABOUT_LINKS.source} />
-          <LinkRow label="All releases" url={ABOUT_LINKS.releases} />
-          <div className="flex items-center justify-between gap-4 px-4 py-3">
-            <div className="text-xs text-slate-100">AI</div>
-            <span className="text-[11px] text-slate-300">Google Gemini, with your own key</span>
-          </div>
-          <div className="flex items-center justify-between gap-4 px-4 py-3">
-            <div className="text-xs text-slate-100">PC control</div>
-            <span className="text-[11px] text-slate-300">Local desktop agent, permission-checked</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="space-y-2">
-        <div>
-          <h4 className="font-mono text-[10px] uppercase tracking-widest text-slate-400">Updates</h4>
-          <p className="mt-0.5 text-[11px] text-slate-500">Auto downloads new versions in the background · Manual only checks when you ask.</p>
-        </div>
-        <div className="divide-y divide-white/5 rounded-xl border border-white/10 bg-white/[0.03]">
-          <div className="flex items-center justify-between gap-4 px-4 py-3">
+    <>
+      <div className="flex items-center justify-between gap-4 px-4 py-3">
             <div className="min-w-0">
               <div className="text-xs text-slate-100">Update mode</div>
               <div className="mt-0.5 text-[11px] leading-snug text-slate-500">{desktop ? "Applies to this installed app." : "Installs only work in the downloaded app — here it's read-only."}</div>
@@ -303,6 +273,37 @@ export function AboutUpdates({ app, onPatch }: { app: AppSettings | null; onPatc
                 {desktop && <div className="text-[10px] leading-relaxed text-slate-500">Switching installs that version over this copy and restarts the app. Your characters, memories and settings are kept.</div>}
               </div>
             )}
+          </div>
+    </>
+  );
+}
+
+export function AboutUpdates({ app: _app, onPatch: _onPatch }: { app: AppSettings | null; onPatch: (patch: AppSettingsPatch) => void }) {
+  void _app;
+  void _onPatch;
+  const current = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "";
+  return (
+    <div className="space-y-5">
+      <section className="space-y-2">
+        <div>
+          <h4 className="font-mono text-[10px] uppercase tracking-widest text-slate-400">ABxAG</h4>
+        </div>
+        <div className="divide-y divide-white/5 rounded-xl border border-white/10 bg-white/[0.03]">
+          <div className="flex items-center justify-between gap-4 px-4 py-3">
+            <div className="text-xs text-slate-100">Version</div>
+            <span className="font-mono text-[11px] text-slate-300">{current}</span>
+          </div>
+          <LinkRow label="Website" url={ABOUT_LINKS.website} />
+          <LinkRow label="Mirror" url={ABOUT_LINKS.mirror} />
+          <LinkRow label="Source code" url={ABOUT_LINKS.source} />
+          <LinkRow label="All releases" url={ABOUT_LINKS.releases} />
+          <div className="flex items-center justify-between gap-4 px-4 py-3">
+            <div className="text-xs text-slate-100">AI</div>
+            <span className="text-[11px] text-slate-300">Google Gemini, with your own key</span>
+          </div>
+          <div className="flex items-center justify-between gap-4 px-4 py-3">
+            <div className="text-xs text-slate-100">PC control</div>
+            <span className="text-[11px] text-slate-300">Local desktop agent, permission-checked</span>
           </div>
         </div>
       </section>
