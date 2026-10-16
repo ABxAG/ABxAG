@@ -8,3 +8,4 @@
 - [dual-cursor-removal](./tracks/dual-cursor-removal/index.md) — Full removal of the virtual mouse (physical-mouse path only)
 - [site-hud-content](./tracks/site-hud-content/index.md) — Website content: HUD overlay spotlight, Era 6, FAQ
 - [lightfast](./tracks/lightfast/index.md) — Lightweight & fast: prune installer weight, keep boot fast
+- [settings-system-update](./tracks/settings-system-update/index.md) - Settings: updater UI moved to System > Update (move-only)
