@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { api, TERMINAL_TASK_STATES, type AppSettings, type TaskView } from "../lib/appApi";
 import type { LiveState } from "../lib/audio";
+import { HologramAvatar } from "./HologramAvatar";
 
 /** Shell bridge (preload `abxag.hud`). Null outside Electron. */
 interface HudBridge {
@@ -25,7 +26,6 @@ interface HudBridge {
 export interface HudRelay {
   connection?: LiveState;
   at?: number;
-  avatar?: string;
   notices?: Array<{ text: string; kind: string }>;
 }
 
@@ -79,6 +79,7 @@ export function HudOverlay() {
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
   const [vcursor, setVcursor] = useState<{ status?: string; task?: string } | null>(null);
   const [tasks, setTasks] = useState<TaskView[]>([]);
+  const [logLines, setLogLines] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
 
@@ -105,11 +106,12 @@ export function HudOverlay() {
     const tick = async () => {
       const t0 = performance.now();
       try {
-        const [config, health, vc, list] = await Promise.all([
+        const [config, health, vc, list, logs] = await Promise.all([
           fetch("/api/config", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
           fetch("/api/agent-health", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
           fetch("/api/virtual-cursor", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
           api.tasks(5).catch(() => [] as TaskView[]),
+          fetch("/api/logs/commands", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
         ]);
         if (dead) return;
         setBackendOk(config ? true : false);
@@ -118,6 +120,8 @@ export function HudOverlay() {
         setLatencyMs(Math.round(performance.now() - t0));
         setVcursor(vc && typeof vc === "object" ? { status: String(vc.status ?? ""), task: String(vc.task ?? "") } : null);
         setTasks(Array.isArray(list) ? list : []);
+        const lines = Array.isArray(logs?.lines) ? logs.lines as unknown[] : [];
+        setLogLines(lines.map((l) => String(l).slice(0, 160)).filter(Boolean).slice(-4).reverse());
       } catch {
         if (!dead) setBackendOk(false);
       }
@@ -171,8 +175,12 @@ export function HudOverlay() {
   const w = settings?.overlay.widgets;
   const show = (key: keyof NonNullable<AppSettings["overlay"]["widgets"]>) => w?.[key] ?? true;
   const compact = settings?.overlay.compact ?? false;
-  const connection: LiveState = relay.connection ?? "disconnected";
+  const relayFresh = typeof relay.at === "number" && Date.now() - relay.at < 15_000;
+  const connection: LiveState = relayFresh ? (relay.connection ?? "disconnected") : "disconnected";
   const liveTasks = tasks.filter((t) => !TERMINAL_TASK_STATES.has(t.state));
+  const conversationLines = relayFresh && relay.notices && relay.notices.length > 0
+    ? relay.notices.slice(-4).reverse().map((n) => `[${n.kind}] ${n.text}`)
+    : logLines;
 
   return (
     <div className="flex h-screen w-screen flex-col gap-2 overflow-y-auto bg-slate-950/95 p-3 text-slate-100">
@@ -202,16 +210,12 @@ export function HudOverlay() {
       )}
 
       {show("avatar") && (
-        <Card title="Avatar" icon={<span className="inline-block h-3 w-3 rounded-full bg-cyan-400/70" />}>
+        <Card title="Hologram" icon={<span className="inline-block h-3 w-3 rounded-full bg-cyan-400/70" />}>
           <div className="flex items-center gap-2.5">
-            {relay.avatar ? (
-              <img src={relay.avatar} alt="Loaded 3D character" className={`h-16 w-16 rounded-xl border object-cover ${connection === "speaking" ? "border-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.5)]" : "border-white/15"}`} />
-            ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-white/15 text-[9px] text-slate-500">no frame yet</div>
-            )}
+            <HologramAvatar connection={connection} />
             <div className="font-mono text-[10px] leading-relaxed text-slate-400">
               <div className="text-slate-200">{CONNECTION_LABEL[connection]}</div>
-              <div>mirror of your loaded 3D character</div>
+              <div>eyes follow your pointer, mouth moves as she speaks</div>
             </div>
           </div>
         </Card>
@@ -220,10 +224,11 @@ export function HudOverlay() {
       {!compact && show("mic") && (
         <Card title="Mic" icon={connection === "disconnected" ? <MicOff size={iconSize} /> : <Mic size={iconSize} />}>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[11px] text-slate-200">{CONNECTION_LABEL[connection]}</span>
+            <span className="font-mono text-[11px] text-slate-200">{relayFresh ? CONNECTION_LABEL[connection] : "LINK IDLE"}</span>
             <button type="button" onClick={() => hudBridge()?.showMain?.()}
               className="ml-auto rounded-lg border border-white/10 bg-white/5 px-2 py-1 font-mono text-[10px] text-slate-300 hover:bg-white/10 cursor-pointer">OPEN APP TO TALK</button>
           </div>
+          {!relayFresh && <div className="mt-1 font-mono text-[9px] text-slate-500">voice state appears once the main window links up</div>}
         </Card>
       )}
 
@@ -286,12 +291,10 @@ export function HudOverlay() {
 
       {!compact && show("conversation") && (
         <Card title="Conversation" icon={<MessagesSquare size={iconSize} />}>
-          {relay.notices && relay.notices.length > 0 ? (
+          {conversationLines.length > 0 ? (
             <ul className="space-y-1">
-              {relay.notices.slice(-4).reverse().map((n, i) => (
-                <li key={i} className="truncate font-mono text-[10px] text-slate-400">
-                  <span className="text-slate-500">[{n.kind}]</span> {n.text}
-                </li>
+              {conversationLines.map((line, i) => (
+                <li key={i} className="truncate font-mono text-[10px] text-slate-400">{line}</li>
               ))}
             </ul>
           ) : (

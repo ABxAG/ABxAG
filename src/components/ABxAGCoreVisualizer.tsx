@@ -14,7 +14,6 @@ import React, { useEffect, useMemo, useRef } from "react";
 import { ABxAGAudioSession, LiveState } from "../lib/audio";
 import { ABxAGCharacter } from "../character/ABxAGCharacter";
 import type { CharacterActivity } from "../character/behaviour/behaviours";
-import type { CharacterSystem } from "../character/core/CharacterSystem";
 
 export type ABxAGEmotion =
   | "idle"
@@ -39,8 +38,6 @@ interface ABxAGCoreVisualizerProps {
   reflectionStrength?: number;
   /** Character to show (built-in or imported); undefined = default. */
   characterId?: string;
-  /** HUD overlay avatar mirror: receives the live character system. */
-  onSystem?: (system: CharacterSystem | null) => void;
 }
 
 /** Cinematic accent colours per theme. */
@@ -71,7 +68,6 @@ export const ABxAGCoreVisualizer: React.FC<ABxAGCoreVisualizerProps> = ({
   characterState,
   reflectionStrength = 1,
   characterId,
-  onSystem,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationRef = useRef<number | null>(null);
@@ -225,7 +221,6 @@ export const ABxAGCoreVisualizer: React.FC<ABxAGCoreVisualizerProps> = ({
         <ABxAGCharacter
           desktopOnlyWhenPotato
           characterId={characterId}
-          onSystem={onSystem}
           activity={activity}
           emotion={activeEmotion}
           outputAnalyser={outputAnalyser}
