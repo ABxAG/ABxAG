@@ -19,7 +19,7 @@ import { api, LOCKED_CAPABILITIES, type AppSettings, type AppSettingsPatch, type
 import { ModelSelectorPanel } from "./ModelSelector";
 import { AboutUpdates } from "./AboutUpdates";
 
-export type SettingsSection = "general" | "ai" | "voice" | "agent" | "privacy" | "presence" | "character" | "system" | "about";
+export type SettingsSection = "general" | "ai" | "voice" | "agent" | "overlay" | "privacy" | "presence" | "character" | "system" | "about";
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -41,6 +41,7 @@ const SECTIONS: { id: SettingsSection; label: string; icon: typeof Power }[] = [
   { id: "ai", label: "AI models & keys", icon: Brain },
   { id: "voice", label: "Voice", icon: Mic },
   { id: "agent", label: "PC control & safety", icon: ShieldCheck },
+  { id: "overlay", label: "Overlay", icon: MonitorSmartphone },
   { id: "privacy", label: "Privacy", icon: Lock },
   { id: "presence", label: "Presence", icon: Bell },
   { id: "character", label: "Character & companion", icon: Sparkles },
@@ -346,6 +347,52 @@ function AgentSection({ app, patch }: { app: AppSettings; patch: (p: AppSettings
   );
 }
 
+const OVERLAY_WIDGETS: Array<[keyof AppSettings["overlay"]["widgets"], string, string]> = [
+  ["status", "Status", "Backend + agent health at a glance."],
+  ["mic", "Mic", "Voice connection state."],
+  ["task", "Task", "Current AI task with pause / stop."],
+  ["avatar", "Avatar", "Live mirror of your loaded 3D character."],
+  ["system", "System", "Loop latency + agent tool count."],
+  ["clock", "Clock", "Local time."],
+  ["emergency", "Emergency", "One-click stop for every task."],
+  ["conversation", "Conversation", "Recent notices from ABxAG."],
+  ["quick", "Quick actions", "Downloads, RAM check, Chrome, screenshot."],
+];
+
+function OverlaySection({ app, patch }: { app: AppSettings; patch: (p: AppSettingsPatch) => void }) {
+  const overlay = app.overlay;
+  if (!overlay) return null;
+  return (
+    <div className="space-y-5">
+      <Group title="HUD overlay" hint="ZORION-style floating dashboard: its own always-on-top window with clickable widgets. Off by default.">
+        <ToggleRow label="Enable overlay" description="Show the floating HUD window. Toggle anytime with the hotkey below."
+          checked={overlay.enabled} onChange={(v) => patch({ overlay: { enabled: v } })} />
+        <ToggleRow label="Compact mode" description="Shrink to status + avatar + emergency only."
+          checked={overlay.compact} onChange={(v) => patch({ overlay: { compact: v } })} />
+        <ToggleRow label="Always on top" description="Keep the HUD above other windows."
+          checked={overlay.alwaysOnTop} onChange={(v) => patch({ overlay: { alwaysOnTop: v } })} />
+        <ToggleRow label="Hide in fullscreen" description="Auto-hide while a game or fullscreen app is in front."
+          checked={overlay.hideInFullscreen} onChange={(v) => patch({ overlay: { hideInFullscreen: v } })} />
+        <ToggleRow label="Click through" description="Let clicks pass through the HUD (glanceable). Off = fully interactive."
+          checked={overlay.clickThrough} onChange={(v) => patch({ overlay: { clickThrough: v } })} />
+        <SliderRow label="Opacity" description="Window transparency." value={Math.round(overlay.opacity * 100)} min={40} max={100} step={2} unit="%" onChange={(v) => patch({ overlay: { opacity: v / 100 } })} />
+        <Row label="Toggle shortcut" description="Show or hide the overlay from anywhere.">
+          <kbd className="rounded-md border border-white/15 bg-black/40 px-2 py-1 font-mono text-[11px] text-slate-200">{overlay.hotkey.replace(/\+/g, " + ")}</kbd>
+        </Row>
+      </Group>
+
+      <Group title="Widgets" hint="Each widget polls only while the overlay is visible.">
+        {OVERLAY_WIDGETS.map(([id, label, description]) => (
+          <div key={id}>
+            <ToggleRow label={label} description={description}
+              checked={overlay.widgets[id]} onChange={(v) => patch({ overlay: { widgets: { ...overlay.widgets, [id]: v } as AppSettings["overlay"]["widgets"] } })} />
+          </div>
+        ))}
+      </Group>
+    </div>
+  );
+}
+
 function PrivacySection() {
   const { view, error, set } = usePermissions();
   return (
@@ -531,6 +578,7 @@ export function SettingsPanel({ isOpen, onClose, settings, onChange, appSettings
                 )}
 
                 {section === "agent" && app && <AgentSection app={app} patch={patch} />}
+                {section === "overlay" && app && <OverlaySection app={app} patch={patch} />}
 
                 {section === "privacy" && <PrivacySection />}
 

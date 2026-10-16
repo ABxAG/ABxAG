@@ -60,6 +60,32 @@ export interface AppSettings {
     /** She sometimes hides behind a screen edge and peeks back in. */
     hideAndPeek: boolean;
   };
+  /** ZORION-style interactive HUD overlay (separate always-on-top window). */
+  overlay: {
+    /** Master switch. Default OFF (ZORION parity). */
+    enabled: boolean;
+    alwaysOnTop: boolean;
+    /** Window opacity 0.4..1. */
+    opacity: number;
+    /** true = clicks pass through (glanceable); false = fully interactive. */
+    clickThrough: boolean;
+    hideInFullscreen: boolean;
+    /** Compact = status + avatar + emergency only. */
+    compact: boolean;
+    /** Global toggle hotkey. */
+    hotkey: string;
+    widgets: {
+      status: boolean;
+      mic: boolean;
+      task: boolean;
+      avatar: boolean;
+      system: boolean;
+      clock: boolean;
+      emergency: boolean;
+      conversation: boolean;
+      quick: boolean;
+    };
+  };
   character: {
     activeCharacterId: string;
     eyeFollowCursor: boolean;
@@ -159,6 +185,26 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     standOut: 0.7,
     hideAndPeek: true,
   },
+  overlay: {
+    enabled: false,
+    alwaysOnTop: true,
+    opacity: 0.94,
+    clickThrough: false,
+    hideInFullscreen: true,
+    compact: false,
+    hotkey: "Control+Alt+O",
+    widgets: {
+      status: true,
+      mic: true,
+      task: true,
+      avatar: true,
+      system: true,
+      clock: true,
+      emergency: true,
+      conversation: true,
+      quick: true,
+    },
+  },
   character: {
     activeCharacterId: "evelyn",
     eyeFollowCursor: true,
@@ -218,7 +264,7 @@ const bool = (value: unknown, fallback: boolean) => (typeof value === "boolean" 
 export function normalizeSettings(input: unknown, base: AppSettings = DEFAULT_APP_SETTINGS): AppSettings {
   const raw = (input && typeof input === "object" ? input : {}) as Record<string, any>;
   const d = base;
-  const b = raw.behavior || {}, a = raw.autonomy || {}, v = raw.voice || {}, c = raw.companion || {}, ch = raw.character || {}, p = raw.physics || {}, pr = raw.privacy || {}, pe = raw.performance || {}, dev = raw.developer || {}, gr = raw.graphics || {}, up = raw.updates || {};
+  const b = raw.behavior || {}, a = raw.autonomy || {}, v = raw.voice || {}, c = raw.companion || {}, ch = raw.character || {}, p = raw.physics || {}, pr = raw.privacy || {}, pe = raw.performance || {}, dev = raw.developer || {}, gr = raw.graphics || {}, up = raw.updates || {}, o = raw.overlay || {}, ow = o.widgets || {};
   return {
     version: 3,
     onboardingComplete: bool(raw.onboardingComplete, d.onboardingComplete),
@@ -267,6 +313,26 @@ export function normalizeSettings(input: unknown, base: AppSettings = DEFAULT_AP
       iconPlay: bool(c.iconPlay, d.companion.iconPlay),
       standOut: clamp(c.standOut, 0, 1, d.companion.standOut),
       hideAndPeek: bool(c.hideAndPeek, d.companion.hideAndPeek),
+    },
+    overlay: {
+      enabled: bool(o.enabled, d.overlay.enabled),
+      alwaysOnTop: bool(o.alwaysOnTop, d.overlay.alwaysOnTop),
+      opacity: clamp(o.opacity, 0.4, 1, d.overlay.opacity),
+      clickThrough: bool(o.clickThrough, d.overlay.clickThrough),
+      hideInFullscreen: bool(o.hideInFullscreen, d.overlay.hideInFullscreen),
+      compact: bool(o.compact, d.overlay.compact),
+      hotkey: typeof o.hotkey === "string" && /^[A-Za-z0-9+]{3,40}$/.test(o.hotkey) ? o.hotkey : d.overlay.hotkey,
+      widgets: {
+        status: bool(ow.status, d.overlay.widgets.status),
+        mic: bool(ow.mic, d.overlay.widgets.mic),
+        task: bool(ow.task, d.overlay.widgets.task),
+        avatar: bool(ow.avatar, d.overlay.widgets.avatar),
+        system: bool(ow.system, d.overlay.widgets.system),
+        clock: bool(ow.clock, d.overlay.widgets.clock),
+        emergency: bool(ow.emergency, d.overlay.widgets.emergency),
+        conversation: bool(ow.conversation, d.overlay.widgets.conversation),
+        quick: bool(ow.quick, d.overlay.widgets.quick),
+      },
     },
     character: {
       activeCharacterId: typeof ch.activeCharacterId === "string" && /^[a-z0-9_-]{1,64}$/.test(ch.activeCharacterId) ? ch.activeCharacterId : d.character.activeCharacterId,

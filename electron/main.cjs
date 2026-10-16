@@ -744,10 +744,47 @@ function ownPids() {
   }
 }
 
+let registeredHudShortcut = null;
+
+function registerHudHotkey(hotkey) {
+  const accelerator = (typeof hotkey === 'string' && hotkey) || 'Control+Alt+O';
+  if (accelerator === registeredHudShortcut) return;
+  if (registeredHudShortcut) globalShortcut.unregister(registeredHudShortcut);
+  registeredHudShortcut = null;
+  try {
+    const hud = require('./hud-overlay.cjs');
+    if (globalShortcut.register(accelerator, () => hud.toggleHudVisible())) {
+      registeredHudShortcut = accelerator;
+    } else {
+      console.warn(`[shell] HUD overlay shortcut ${accelerator} is taken by another app (Settings → Overlay still works)`);
+    }
+  } catch (error) {
+    console.warn('[shell] invalid HUD overlay shortcut:', error && error.message);
+  }
+}
+
+function applyHudShellSettings(settings) {
+  try {
+    const hud = require('./hud-overlay.cjs');
+    const overlaySettings = settings?.overlay;
+    hud.applyHudSettings(overlaySettings);
+    registerHudHotkey(overlaySettings?.hotkey);
+    if (overlaySettings?.enabled && !hud.isHudOpen()) {
+      hud.createHudOverlay(SERVER_ORIGIN);
+      hud.setHudVisible(true);
+    } else if (!overlaySettings?.enabled && hud.isHudOpen()) {
+      hud.destroyHudOverlay();
+    }
+  } catch (error) {
+    console.warn('[shell] HUD overlay settings unavailable:', error && error.message);
+  }
+}
+
 function applyShellSettings(settings) {
   if (!settings || typeof settings !== 'object') return;
   shellSettings = settings;
   companion?.applySettings(settings);
+  applyHudShellSettings(settings);
   // Emergency stop shortcut (always available, even when ABxAG is hidden).
   const accelerator = settings.autonomy?.emergencyShortcut || 'Control+Alt+Shift+S';
   if (accelerator !== registeredShortcut) {
@@ -845,6 +882,16 @@ function startShell() {
     console.warn('[shell] virtual cursor overlay unavailable:', error && error.message);
   }
 
+  // HUD overlay: ZORION-style interactive widget dashboard (Settings → Overlay).
+  try {
+    const hud = require('./hud-overlay.cjs');
+    hud.initHudIpc({ sendToBackend, openMain: openMainWindow });
+    hud.applyHudSettings(shellSettings?.overlay);
+    if (shellSettings?.overlay?.enabled) hud.setHudVisible(true);
+  } catch (error) {
+    console.warn('[shell] HUD overlay unavailable:', error && error.message);
+  }
+
   // Power / session events feed presence (no away check-ins while locked).
   for (const event of ['lock-screen', 'unlock-screen', 'suspend', 'resume']) {
     powerMonitor.on(event, () => sendToBackend({ type: 'power', event }));
@@ -906,9 +953,13 @@ function handleRuntimeMessage(message) {
     case 'runtime:settings':
       applyShellSettings(message.settings);
       break;
-    case 'runtime:foreground':
+    case 'runtime:foreground': {
       companion?.onForeground(message);
+      try {
+        require('./hud-overlay.cjs').onHudForeground(message);
+      } catch {}
       break;
+    }
     case 'runtime:companion':
       companion?.handleCommand(String(message.command || ''));
       break;
@@ -972,6 +1023,9 @@ app.on('activate', () => {
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
   stopRawInput();
+  try {
+    require('./hud-overlay.cjs').destroyHudOverlay();
+  } catch {}
 });
 
 app.on('window-all-closed', () => {

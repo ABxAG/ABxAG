@@ -41,8 +41,21 @@ import { BootSequence } from "./components/BootSequence";
 import { CommandPalette, type CommandDef } from "./components/CommandPalette";
 import { CyberFrame } from "./components/CyberFrame";
 import { CommandDeck } from "./components/CommandDeck";
+import { HudOverlay } from "./components/HudOverlay";
+import { useHudSync } from "./lib/useHudSync";
+import type { CharacterSystem } from "./character/core/CharacterSystem";
 
 export default function App() {
+  // ZORION-style HUD overlay window: the shell loads the same app with
+  // `?hud=1` — render only the standalone HUD, none of the main UI.
+  const [hudMode] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).has("hud");
+    } catch {
+      return false;
+    }
+  });
+  if (hudMode) return <HudOverlay />;
   const [state, setState] = useState<LiveState>("disconnected");
 
   // Real-time Screen Sharing states
@@ -315,11 +328,20 @@ export default function App() {
   // Which character ABxAG appears as (built-in or locally imported), and the studio.
   const [activeCharacterId, setActiveCharacterId] = useState<string | undefined>(undefined);
   const [showStudio, setShowStudio] = useState(false);
+  // Live character system for the HUD overlay avatar mirror.
+  const hudSystemRef = useRef<CharacterSystem | null>(null);
 
   // Server-side settings (agent, presence, companion, onboarding…) and live runtime events.
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const events = useAppEvents();
+  // Relay mic state + notices + 3D avatar frames to the HUD overlay window.
+  useHudSync({
+    connection: state,
+    notices: events.notices,
+    systemRef: hudSystemRef,
+    enabled: appSettings?.overlay?.enabled ?? false,
+  });
   const reloadAppSettings = () =>
     api.appSettings()
       .then((s) => {
@@ -764,6 +786,7 @@ export default function App() {
           characterState={characterState}
           reflectionStrength={settings.characterShine / 50}
           characterId={activeCharacterId}
+          onSystem={(system) => { hudSystemRef.current = system; }}
         />
       </div>
 

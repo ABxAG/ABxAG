@@ -141,6 +141,16 @@ export interface AppSettings {
     hideAndPeek: boolean;
     [key: string]: unknown;
   };
+  overlay: {
+    enabled: boolean;
+    alwaysOnTop: boolean;
+    opacity: number;
+    clickThrough: boolean;
+    hideInFullscreen: boolean;
+    compact: boolean;
+    hotkey: string;
+    widgets: { status: boolean; mic: boolean; task: boolean; avatar: boolean; system: boolean; clock: boolean; emergency: boolean; conversation: boolean; quick: boolean };
+  };
   character: { activeCharacterId: string; eyeFollowCursor: boolean; headFollowCursor: boolean; idleVariety: number };
   graphics: { realism: number; quality: "auto" | "potato" | "low" | "balanced" | "high"; autoStep: number };
   physics: {

@@ -55,6 +55,23 @@ contextBridge.exposeInMainWorld('abxag', {
     ipcRenderer.on('app:open-studio', listener);
     return () => ipcRenderer.removeListener('app:open-studio', listener);
   },
+  /** ZORION-style HUD overlay bridge (both directions). */
+  hud: {
+    /** Main window → shell: live state + avatar frame relay. */
+    pushSync: (payload) => ipcRenderer.send('hud:sync', payload || {}),
+    /** Overlay window: subscribe to relayed main-window state. */
+    onSync: (callback) => {
+      const listener = (_event, payload) => callback(payload);
+      ipcRenderer.on('hud:sync', listener);
+      return () => ipcRenderer.removeListener('hud:sync', listener);
+    },
+    /** Overlay window → backend runtime message (emergency stop, tasks…). */
+    sendBackend: (message) => ipcRenderer.send('hud:backend', message || {}),
+    /** Overlay window: ask the shell to hide the overlay. */
+    close: () => ipcRenderer.send('hud:close'),
+    /** Overlay window: bring the main ABxAG window forward. */
+    showMain: () => ipcRenderer.send('hud:show-main'),
+  },
   /** Desktop companion window bridge (only meaningful in that window). */
   companion: {
     setInteractive: (value) => ipcRenderer.send('companion:interactive', Boolean(value)),
