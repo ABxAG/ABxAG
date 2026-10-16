@@ -1,4 +1,4 @@
-# ABxAG — Session Handoff Prompt (v1.1.15, DEV)
+# ABxAG — Session Handoff Prompt (v1.1.15, DEV, updated 2026-10-15)
 
 > Copy everything below the line into a new session. It contains the full
 > project state, conventions, release routine, and hard-won gotchas.
@@ -115,6 +115,34 @@ Site pages (all PascalCase): `/DownLoad/`, `/RoadMap/` (+ `/`, static
   toggles, markdown-lite notes, `anim.js` (hero entrance, gradient shimmer,
   IO reveal + 2.5s backstop, count-up, tilt, hamburger), scrollspy.
   Dual-shape feed parser shared with the app (`website/feed.js`).
+  Since v1.1.15: hamburger works under Reduce Motion (PR #3 — menu IIFE
+  must NEVER sit behind the reduced-motion gate); RoadMap redesigned
+  (hero stats, alternating spine timeline with scroll-progress fill,
+  era detail modals, per-era accent colors, rainbow spine — PRs #4,5,6,7);
+  DownLoad redesigned (hero, 4 platform cards, requirements strip,
+  install steps, FAQ accordion, feed-wired buttons — PR #11) + automatic
+  OS detection (green glow + DETECTED badge + primary button, `?os=`
+  override for testing, Android/iOS map to nothing — PR #13).
+  macOS card is Planned/disabled (no macOS build exists — never fake it).
+- **Linux experimental (v1.1.15 asset, NOT a release bump):**
+  `ABxAG-1.1.15-experimental-linux.AppImage` (~170MB) attached to the
+  existing v1.1.15 GitHub release. Built on ubuntu-latest via
+  `.github/workflows/linux.yml` (manual dispatch): lint → AppImage pack →
+  xvfb smoke (backend :47130 up, agent skipped, no agent blob/process).
+  `server.ts spawnDesktopAgent()` refuses non-win32 with
+  `AGENT_SPAWN_SKIPPED_NONWINDOWS`. `website/releases.json` + `latest.yml`
+  deliberately UNTOUCHED (Windows updater safety). Track:
+  `conductor/tracks/linux-exp/`. Agent stays Win32-native — no Linux port.
+- **App animated UI (PR #19 other session + PR #20 here):** boot overlay,
+  Ctrl+K command palette + motion system (`cyber-panel`, `cyber-scanlines`,
+  `neon-text-cyan`); wave 2 adds HUD `CyberFrame` + floating `CommandDeck`
+  orb (status, quick actions delegating to existing handlers, theme dots,
+  SYS.LOG, shortcuts). Preview: `/ui-preview.html?boot=1|palette=1|deck=1`.
+  Tracks: `conductor/tracks/animated-ui/`, `conductor/tracks/cyber-ui/`.
+- **README** is big-OSS style now (badges, feature table, download matrix,
+  contributing — PR #18). Version line kept for the release routine.
+- **v1.1.15 release assets (5):** Setup exe, Portable exe, Setup blockmap,
+  latest.yml, + experimental AppImage. Feed still lists Windows builds only.
 
 ## 5. Known environment quirks
 
@@ -139,6 +167,42 @@ Site pages (all PascalCase): `/DownLoad/`, `/RoadMap/` (+ `/`, static
   block in `server.ts` finalInstructions).
 - Larger context docs: `README.md`, `docs/COGNITIVE_ARCHITECTURE.md`,
   `PRD/` (per-feature PRDs), `conductor/`.
+- **PARALLEL SESSIONS share this working tree** (learned 2026-10-14/15 the
+  hard way): before ANY work, check `git log --oneline -5`, `git status`,
+  and open PRs (`gh pr list`) — your task may already be done+merged
+  (happened with animated UI = PR #19, roadmap color = PR #7, download
+  redesign = PR #11: branches + PRs pre-existed). Never `git checkout -- .`
+  blindly; inspect staged vs unstaged separately. Someone's `git rm`
+  (staged deletions) once turned lint red — restore, don't pile on.
+- **Windows PID recycling is real:** a `Start-Process` PID was reused by
+  Notepad within seconds. ALWAYS verify `Win32_Process.CommandLine` before
+  kill; kill ONLY your own (npx/tsx/python http.server YOU spawned).
+- **Tool-harness limits:** every bash call = FRESH PowerShell session
+  (`Start-Job` children die with it). `-RedirectStandard*` and
+  `cmd /c start /b` get killed (`ChildProcess.kill`) — launch with plain
+  `Start-Process` (no redirect) and poll in later calls. `npx tsx server.ts`
+  needs 30–90s cold boot: poll in ONE loop call, don't assume 15s is enough.
+- **Playwright screenshot races:** `scroll-behavior: smooth` + separate
+  tool calls = screenshots of the WRONG section. Always scroll
+  (`behavior: 'instant'`) + screenshot ATOMICALLY in one `run_code` block.
+  `locator.click()` + smooth scroll can hit the WRONG card — use instant
+  `scrollIntoView` + coordinate click for determinism.
+- **File edits:** use the Edit tool ONLY. Shell `Set-Content` once collapsed
+  a whole file to one line. The Write tool overwrites silently — a parallel
+  session's file died this way; check `git log`/PRs first.
+- **Shell quoting:** PowerShell mangles `node -e` with `$vars` and multi-arg
+  `gh ... --jq` filters — stage temp `.js` files in
+  `C:\Users\abisl\AppData\Local\Temp\opencode` instead.
+- **Dev server writes runtime data to repo ROOT** (`secrets.json`,
+  `secrets.v2.json`, `settings.json`, `memories.json`) — untracked AND not
+  gitignored. NEVER `git add -A`; never commit them (a real Gemini key may
+  sit inside). Proposed: add them to `.gitignore` (needs user approval).
+- **Release/CI gotchas:** electron-builder defaults to `--publish always`
+  → CI pack scripts need `-p never` (publish via `gh release upload`
+  instead). AppImage CI needs `libfuse2` + `xvfb` + PIL-regenerated
+  `build/icon.png` (gitignored). Dummy API keys get HTTP 400 from the
+  backend (format-validated). `color-mix()` in site CSS is fine.
+  `.ver-card > div { min-width: 0 }` fixes mobile grid-blowout overflow.
 - Research chats (user-logged-in browser, read-only unless asked to post):
   Gemini `gemini.google.com/app/1739557deec52888` (ABxAG audit + site
   features), ChatGPT `chatgpt.com/c/6acbd4d2-c318-83e8-9884-d49b2a8438cb`
