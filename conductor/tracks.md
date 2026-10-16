@@ -7,3 +7,4 @@
 - [zorion-overlay](./tracks/zorion-overlay/index.md) — ZORION-style interactive HUD overlay (9 widgets, 3D avatar mirror)
 - [dual-cursor-removal](./tracks/dual-cursor-removal/index.md) — Full removal of the virtual mouse (physical-mouse path only)
 - [site-hud-content](./tracks/site-hud-content/index.md) — Website content: HUD overlay spotlight, Era 6, FAQ
+- [lightfast](./tracks/lightfast/index.md) — Lightweight & fast: prune installer weight, keep boot fast
