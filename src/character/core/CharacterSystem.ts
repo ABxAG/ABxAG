@@ -1392,35 +1392,6 @@ export class CharacterSystem {
     return out[3];
   }
 
-  /**
-   * Downscaled JPEG snapshot of the currently rendered character for the HUD
-   * overlay avatar mirror. Renders a fresh frame first and copies the pixels
-   * synchronously in the same task, so it is valid without
-   * preserveDrawingBuffer (same trick as alphaAt). Returns null when no model
-   * is loaded or capture fails — the overlay then shows its fallback.
-   */
-  captureAvatar(size = 192): string | null {
-    try {
-      if (!this.model) return null;
-      this.stage.render();
-      const src = this.stage.renderer.domElement;
-      const srcW = src.width || 1;
-      const srcH = src.height || 1;
-      const side = Math.min(srcW, srcH);
-      const sx = Math.round((srcW - side) / 2);
-      const sy = Math.round((srcH - side) / 2);
-      const out = document.createElement("canvas");
-      out.width = size;
-      out.height = size;
-      const ctx = out.getContext("2d");
-      if (!ctx) return null;
-      ctx.drawImage(src, sx, sy, side, side, 0, 0, size, size);
-      return out.toDataURL("image/jpeg", 0.72);
-    } catch {
-      return null;
-    }
-  }
-
   /** Screen-space (CSS px, from canvas top) of a humanoid slot, or null. */
   slotScreenY(slot: string): number | null {
     const name = this.rigInfo?.humanoid[slot]?.bone;

@@ -26,11 +26,11 @@
    relay state via `window.require('electron').ipcRenderer` (same
    `nodeIntegration` posture as the virtual-cursor overlay). Compact mode
    renders status + avatar + emergency only.
-5. **Main-window sync** (`App.tsx` + character canvas): `useHudSync` hook —
-   every ~500ms POSTs `{ connection, notices tail }` and every ~2fps an
-   avatar JPEG via `ipcRenderer.send('hud:sync', …)` (Electron only,
-   no-op in browser dev). Enable `preserveDrawingBuffer: true` where the
-   character WebGLRenderer is created.
+5. **Main-window sync** (`App.tsx`): `useHudSync` hook — every 2s pushes
+   `{ connection, notices tail }` via `ipcRenderer.send('hud:sync', …)`
+   (Electron only, no-op in browser dev). Mic widget shows LINK IDLE with a
+   staleness note until the relay arrives; conversation falls back to
+   `GET /api/logs/commands` (no new endpoint).
 6. **Settings UI** (`SettingsPanel.tsx`): `SettingsSection "overlay"`,
    SECTIONS entry + section panel (master switch, compact, always-on-top,
    hide-in-fullscreen, click-through, opacity choice, 9 widget toggles,

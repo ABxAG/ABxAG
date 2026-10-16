@@ -1,7 +1,6 @@
 import { useEffect, useRef, type RefObject } from "react";
 import type { LiveState } from "./audio";
 import type { ModelNotice } from "./useAppEvents";
-import type { CharacterSystem } from "../character/core/CharacterSystem";
 
 /** Minimal shape of the Electron HUD bridge exposed via preload. */
 export interface HudPushBridge {
@@ -20,18 +19,18 @@ function hudBridge(): HudPushBridge | null {
 export interface HudSyncInput {
   connection: LiveState;
   notices: ModelNotice[];
-  /** Ref holding the live character system (wired via onSystem). */
-  systemRef: RefObject<CharacterSystem | null>;
-  /** Only push while the overlay is enabled (avoids wasted captures). */
+  /** Only push while the overlay is enabled (avoids wasted traffic). */
   enabled: boolean;
+  /** Kept for call-site compatibility; unused. */
+  systemRef?: RefObject<unknown | null>;
 }
 
 /**
- * Main-window side of the HUD overlay relay. Every 2s pushes connection +
- * recent notices; every 4s captures the loaded 3D character canvas
- * (CharacterSystem.captureAvatar) as a small JPEG. No-ops outside Electron.
+ * Main-window side of the HUD overlay relay. Every 2s pushes voice
+ * connection state + recent notices. No-ops outside Electron. The hologram
+ * avatar renders locally in the overlay, so no pixel capture crosses IPC.
  */
-export function useHudSync({ connection, notices, systemRef, enabled }: HudSyncInput): void {
+export function useHudSync({ connection, notices, enabled }: HudSyncInput): void {
   const connRef = useRef(connection);
   connRef.current = connection;
   const noticesRef = useRef(notices);
@@ -42,17 +41,7 @@ export function useHudSync({ connection, notices, systemRef, enabled }: HudSyncI
     const bridge = hudBridge();
     if (!bridge?.pushSync) return; // browser dev: nothing to relay to
     const push = bridge.pushSync.bind(bridge);
-    let frames = 0;
     const timer = window.setInterval(() => {
-      frames += 1;
-      let avatar: string | null = null;
-      if (frames % 2 === 0) {
-        try {
-          avatar = systemRef.current?.captureAvatar(192) ?? null;
-        } catch {
-          avatar = null;
-        }
-      }
       push({
         connection: connRef.current,
         at: Date.now(),
@@ -60,9 +49,8 @@ export function useHudSync({ connection, notices, systemRef, enabled }: HudSyncI
           text: String(n.text ?? n.kind ?? "").slice(0, 160),
           kind: String(n.kind ?? "info"),
         })),
-        ...(avatar ? { avatar } : {}),
       });
     }, 2000);
     return () => window.clearInterval(timer);
-  }, [enabled, systemRef]);
+  }, [enabled]);
 }

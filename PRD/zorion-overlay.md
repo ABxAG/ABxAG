@@ -8,8 +8,8 @@ in-app panels — nothing floating, interactive, and always visible.
 
 ## Proposal
 Add a fully interactive HUD overlay window (Electron shell) with the same
-9 widgets, mapped to ABxAG systems. Avatar widget mirrors the **loaded 3D
-character** (live low-fps canvas relay, no second three.js instance).
+9 widgets, mapped to ABxAG systems. Avatar widget is a **2D hologram**
+(eye-track + speech anim, canvas 40fps, zero backend dependency).
 All controls live in **Settings → Overlay** (default OFF, ZORION parity),
 toggle hotkey `Ctrl+Alt+O`.
 

@@ -51,15 +51,17 @@ New `SettingsSection "overlay"` ("Overlay", `MonitorSmartphone` icon) in
   patches rejected, previous value kept (same contract as
   `virtualCursorEnabled`).
 
-## 4. Avatar = loaded 3D character (user requirement)
+## 4. Avatar = ZORION-style 2D hologram (user requirement, revised)
 
-Full second three.js instance is rejected (double GPU + model reload).
-Instead: the main window captures its **already-rendered character canvas**
-at low rate (~2fps, 192px JPEG) and the shell relays the frame to the overlay
-via IPC (`hud:sync`). Overlay shows it in a rounded frame with a
-speaking/listening glow (ZORION `speech_animation` equivalent in CSS).
-Requires `preserveDrawingBuffer: true` on the character renderer (one line;
-minor GPU cost, covered by the existing quality auto-step).
+The 3D-canvas-mirror design was dropped after live repro proved the
+main-window → IPC frame relay never delivers reliably (potato mode skips the
+main character copy; capture timing + IPC size are fragile).
+Instead: `HologramAvatar` — a self-contained 40fps canvas avatar rendered
+locally in the overlay (ZORION `hologram.fps: 40` parity). Eyes track the
+pointer (idle wander + blinking); the mouth animates while speaking and
+pulses while listening (ZORION `eye_tracking` + `speech_animation`
+equivalents). No 3D engine, no IPC pixels, no backend dependency; static
+frame under prefers-reduced-motion.
 
 ## 5. Non-goals
 
