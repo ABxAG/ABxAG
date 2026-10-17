@@ -8,6 +8,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { api, type ConfirmationRequest, type ModelSelection, type TaskView, type Utility } from "./appApi";
+import { reportPendingAlarms } from "./alarmSound";
 
 export interface ModelNotice {
   id: number;
@@ -76,6 +77,9 @@ function isTaskView(value: unknown): value is TaskView {
 export function useAppEvents(enabled = true): AppEventsState {
   const [state, setState] = useState<AppEventsState>(INITIAL);
   const noticeId = useRef(0);
+  // Alarm ids we have already sounded, so a reconnect that replays the current
+  // ring does not make the user listen to it twice.
+  const rungOnce = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!enabled) return;
@@ -105,6 +109,13 @@ export function useAppEvents(enabled = true): AppEventsState {
               .map((u) => ({ ...u, status: "ringing" as const, missed: u.status === "missed" || u.missed === true })),
           ],
         }));
+        // Same attention as a fresh ring: these came due while we were not
+        // listening, so nothing has been heard about them yet.
+        const pending = utilities.filter(
+          (u) => (u.status === "ringing" || u.status === "missed") && !rungOnce.current.has(u.id),
+        );
+        for (const alarm of pending) rungOnce.current.add(alarm.id);
+        reportPendingAlarms(pending);
       } catch {
         /* backend still starting; the socket replay covers active tasks */
       }
@@ -146,13 +157,18 @@ export function useAppEvents(enabled = true): AppEventsState {
           }
           case "utility.fired": {
             // An alarm / reminder / timer came due. The ring is a real
-            // attention moment: the main app shows the alarm card with
+            // attention moment: sound it, show the alarm card with
             // snooze / dismiss, the dolls wave and the companion shell grows
             // her window (shell gets it over its own ipc, not this socket).
             const utility = payload as Utility;
             if (utility && typeof utility === "object" && typeof utility.id === "string") {
               const ringing: Utility = { ...utility, status: "ringing" };
               setState((s) => ({ ...s, alarms: [...s.alarms.filter((a) => a.id !== ringing.id), ringing] }));
+              // Only sound it once per alarm, even if a reconnect replays it.
+              if (!rungOnce.current.has(ringing.id)) {
+                rungOnce.current.add(ringing.id);
+                reportPendingAlarms([ringing]);
+              }
             }
             try {
               window.dispatchEvent(new CustomEvent("abxag:alarm-fired", { detail: payload }));

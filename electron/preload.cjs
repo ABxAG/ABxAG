@@ -49,6 +49,13 @@ contextBridge.exposeInMainWorld('abxag', {
       return () => ipcRenderer.removeListener('updates:event', listener);
     },
   },
+  /**
+   * Alarm attention. The renderer's chime is silent when the window is hidden
+   * or Chromium is throttling it, so the shell beeps and surfaces the window.
+   */
+  alarm: {
+    raise: () => ipcRenderer.send('alarm:raise'),
+  },
   /** Main window: open the Character Studio when asked from the tray/companion. */
   onOpenStudio: (callback) => {
     const listener = () => callback();

@@ -27,6 +27,18 @@ export interface UtilityFired {
   missed: boolean;
 }
 
+/**
+ * Optional side effects the host wires up, called every time an alarm is armed
+ * or retired. ABxAG uses them to keep an external (app-independent) alert
+ * alive — see companion/alarmWatchdog.ts.
+ */
+export interface ScheduleHooks {
+  /** An alarm became scheduled: keep an external alert armed for it. */
+  armed?(item: Utility): void;
+  /** An alarm will not fire as scheduled: drop any external alert for it. */
+  released?(id: string): void;
+}
+
 const MAX_TIMEOUT = 2 ** 31 - 1;
 
 export class UtilityScheduler {
@@ -34,7 +46,7 @@ export class UtilityScheduler {
   private readonly timers = new Map<string, NodeJS.Timeout>();
   private readonly file: string;
 
-  constructor(dataDir: string, private readonly onFire: (event: UtilityFired) => void, private readonly now: () => number = Date.now) {
+  constructor(dataDir: string, private readonly onFire: (event: UtilityFired) => void, private readonly now: () => number = Date.now, private readonly hooks: ScheduleHooks = {}) {
     this.file = path.join(dataDir, "companion", "utilities.v1.json");
   }
 
@@ -53,7 +65,7 @@ export class UtilityScheduler {
         }
         if (lateBy < 12 * 3_600_000) missed.push({ utility: { ...item }, missed: true });
       }
-      if (item.status === "scheduled") this.arm(item);
+      if (item.status === "scheduled") this.armWithHooks(item);
     }
     await this.save();
     return missed;
@@ -96,7 +108,7 @@ export class UtilityScheduler {
       status: "scheduled",
     };
     this.items.push(item);
-    this.arm(item);
+    this.armWithHooks(item);
     await this.save();
     return { ...item };
   }
@@ -106,6 +118,7 @@ export class UtilityScheduler {
     if (!item) return false;
     item.status = "cancelled";
     this.disarm(id);
+    this.hooks.released?.(id);
     await this.save();
     return true;
   }
@@ -116,9 +129,10 @@ export class UtilityScheduler {
     if (item.repeat !== "none") {
       item.status = "scheduled";
       item.dueAt = nextOccurrence(item.dueAt, item.repeat, this.now());
-      this.arm(item);
+      this.armWithHooks(item);
     } else {
       item.status = "done";
+      this.hooks.released?.(item.id);
     }
     await this.save();
   }
@@ -128,7 +142,11 @@ export class UtilityScheduler {
     if (!item) return;
     item.status = "scheduled";
     item.dueAt = this.now() + Math.max(1, Math.min(120, minutes)) * 60_000;
-    this.arm(item);
+    // Release the old schedule explicitly before arming the new one: a host
+    // that keys its external alerts on released() must not be left holding a
+    // sleeper that would sound at the time we just moved away from.
+    this.hooks.released?.(id);
+    this.armWithHooks(item);
     await this.save();
   }
 
@@ -151,6 +169,15 @@ export class UtilityScheduler {
     this.timers.set(item.id, timer);
   }
 
+  /**
+   * Arm the in-process timer and tell the host, so it can keep an external
+   * alert alive for the case where ABxAG is closed when the alarm comes due.
+   */
+  private armWithHooks(item: Utility): void {
+    this.arm(item);
+    this.hooks.armed?.({ ...item });
+  }
+
   private disarm(id: string): void {
     const timer = this.timers.get(id);
     if (timer) clearTimeout(timer);
@@ -161,6 +188,8 @@ export class UtilityScheduler {
     item.firedAt = this.now();
     item.status = "ringing";
     this.timers.delete(item.id);
+    // The alert has served its purpose; the external sleeper is done with too.
+    this.hooks.released?.(item.id);
     void this.save();
     this.onFire({ utility: { ...item }, missed: false });
   }

@@ -909,6 +909,25 @@ function startShell() {
     return updater.getState();
   });
   ipcMain.handle('updates:open-url', (_event, url) => updater.openExternal(url));
+
+  // ---- alarm attention (see src/lib/alarmSound.ts) -------------------------
+  // The renderer plays the chime, but a hidden or throttled window cannot be
+  // relied on for sound. The shell beeps through the OS and surfaces the
+  // window, so a reminder is heard even when ABxAG sits in the tray.
+  ipcMain.removeAllListeners('alarm:raise');
+  ipcMain.on('alarm:raise', () => {
+    try {
+      shell.beep();
+    } catch {
+      /* no audio device */
+    }
+    if (mainWindow && (!mainWindow.isVisible() || mainWindow.isMinimized() || !mainWindow.isFocused())) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+      mainWindow.flashFrame(true);
+    }
+  });
 }
 
 /** Physical vs synthetic input, aggregated before it reaches the backend. */

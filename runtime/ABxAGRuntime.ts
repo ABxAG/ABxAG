@@ -20,6 +20,7 @@ import { voicePrompt, type TaskEventKind } from "../agent/personality";
 import { InputArbiter, ResourceScheduler } from "../agent/scheduler";
 import { publicTaskView, TaskStore, TERMINAL_STATES } from "../agent/taskSession";
 import { UtilityScheduler, type UtilityFired } from "../companion/utilities";
+import { AlarmWatchdog, resolveAlarmScriptPath } from "../companion/alarmWatchdog";
 import { ContactBook } from "../memory/contacts";
 import { WorkingMemory } from "../memory/workingMemory";
 import { ModelRegistry } from "../models/registry";
@@ -92,6 +93,8 @@ export class ABxAGRuntime {
   readonly characters: CharacterLibrary;
   private readonly live = new Map<string, LiveVoiceHook>();
   private readonly timers: NodeJS.Timeout[] = [];
+  /** External (app-independent) alert for each scheduled alarm. */
+  private readonly alarmWatchdog: AlarmWatchdog | null = null;
   private readonly eventSockets = new Set<WebSocket>();
   private currentSettings: AppSettings;
   private shellPids: number[] = [];
@@ -151,7 +154,29 @@ export class ABxAGRuntime {
       },
       maxSteps: this.currentSettings.autonomy.maxSteps,
     });
-    this.utilities = new UtilityScheduler(dataDir, (event) => this.onUtilityFired(event));
+    // Every alarm also gets a detached Windows alert (sound + balloon) so it
+    // still reaches the user when ABxAG is closed. These sleepers are
+    // deliberately NOT killed on shutdown - surviving the app is the point.
+    const scriptPath = resolveAlarmScriptPath();
+    if (scriptPath) {
+      this.alarmWatchdog = new AlarmWatchdog({
+        scriptPath,
+        ledgerPath: path.join(dataDir, "companion", "alarm-watchdog.log"),
+        log: (message) => log.warn("[alarm-watchdog] %s", message),
+      });
+      log.info("[alarm-watchdog] external alerts armed via %s", scriptPath);
+    } else {
+      log.warn("[alarm-watchdog] fire-alarm.ps1 not found; alarms will only ring while ABxAG is open");
+    }
+    this.utilities = new UtilityScheduler(
+      dataDir,
+      (event) => this.onUtilityFired(event),
+      Date.now,
+      {
+        armed: (item) => this.alarmWatchdog?.arm(item),
+        released: (id) => this.alarmWatchdog?.disarm(id),
+      },
+    );
     this.poses = new PoseStore(dataDir);
     this.characters = new CharacterLibrary();
   }

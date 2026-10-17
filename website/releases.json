@@ -1,5 +1,33 @@
 [
   {
+    "tag": "v1.1.22",
+    "date": "2026-10-17T21:53:58Z",
+    "title": null,
+    "notes": "## ABxAG v1.1.22\n\n### Fixed\n\n- **Alarms are audible now.** A reminder that fired used to be silent unless a live voice session happened to be connected. Every ring now plays a chime and announces itself, and the shell beeps and pulls the window forward even when ABxAG is hidden or sitting in the tray.\n- **Alarms work when ABxAG is closed.** Each scheduled alarm is registered with the Windows Task Scheduler, which owns it — so closing the app, a crash, or an update can no longer swallow a reminder. Snoozing, dismissing or cancelling removes the registration, and a reminder that came due while the app was shut still tells you it was missed.\n- The ring is no longer published as a notification event that nothing handled.\n\n### Added\n\n- A diagnosis log for external alerts (`%APPDATA%\\ABxAG\\companion\\alarm-watchdog.log`), so my",
+    "assets": [
+      {
+        "name": "ABxAG-Setup-1.1.22.exe",
+        "size": 0,
+        "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.22/ABxAG-Setup-1.1.22.exe"
+      },
+      {
+        "name": "ABxAG-Portable-1.1.22.exe",
+        "size": 0,
+        "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.22/ABxAG-Portable-1.1.22.exe"
+      },
+      {
+        "name": "ABxAG-Setup-1.1.22.exe.blockmap",
+        "size": 0,
+        "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.22/ABxAG-Setup-1.1.22.exe.blockmap"
+      },
+      {
+        "name": "latest.yml",
+        "size": 0,
+        "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.22/latest.yml"
+      }
+    ]
+  },
+  {
     "tag": "v1.1.21",
     "date": "2026-10-18T00:00:00Z",
     "title": null,

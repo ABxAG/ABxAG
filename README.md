@@ -4,7 +4,7 @@
 
 <h1 align="center">ABxAG</h1>
 
-<p align="center">Current version: <b>v1.1.21</b> · <a href="https://github.com/ABxAG/ABxAG/releases">changelog</a></p>
+<p align="center">Current version: <b>v1.1.22</b> · <a href="https://github.com/ABxAG/ABxAG/releases">changelog</a></p>
 
 <p align="center">
   <b>Your private 3D AI desktop companion.</b><br />

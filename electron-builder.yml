@@ -26,6 +26,9 @@ extraResources:
   - from: agent_dist/abxag
     to: agent
     filter: ["**/*"]
+  # Fires the alarm sound/balloon while ABxAG is closed.
+  - from: scripts/fire-alarm.ps1
+    to: fire-alarm.ps1
 
 win:
   icon: build/icon.ico
