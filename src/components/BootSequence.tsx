@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 
+declare const __APP_VERSION__: string;
+
+// The kernel line shows the real build version, not a frozen era. The constant
+// is injected at build time by vite.config.ts (package.json version).
+const APP_VERSION = typeof __APP_VERSION__ !== "undefined" && __APP_VERSION__ ? __APP_VERSION__ : "";
+
 const BOOT_LINES = [
-  "ABxAG kernel v1.1.15 … online",
+  `ABxAG kernel ${APP_VERSION.startsWith("v") ? APP_VERSION : `v${APP_VERSION}`} … online`,
   "holographic stage … materialized",
   "neural link … established",
   "voice grid … listening",
