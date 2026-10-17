@@ -59,6 +59,14 @@ const waiting: TaskView = {
 
 const events: AppEventsState = {
   connected: true,
+  alarms: [{
+    id: "preview-alarm",
+    kind: "alarm",
+    label: "stretch",
+    dueAt: Date.now(),
+    repeat: "none",
+    status: "ringing",
+  }],
   tasks: { [running.id]: running, [waiting.id]: waiting },
   confirmations: [{
     id: "preview-confirm",

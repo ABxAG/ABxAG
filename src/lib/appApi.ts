@@ -51,15 +51,39 @@ export type TaskAction = "stop" | "pause" | "resume" | "takeover" | "return" | "
 
 // ---- alarms, reminders & timers -----------------------------------------------------------
 
-/** Shape of one entry from GET /api/utilities (Upcoming always). */
-export interface UtilityView {
+/**
+ * Mirrors `companion/utilities.ts` (`Utility`). Declared locally instead of
+ * imported: that module pulls in node `path`/`fs` helpers and must never be
+ * bundled into the renderer. Keep both in sync.
+ */
+export type UtilityKind = "alarm" | "reminder" | "timer";
+export type UtilityRepeat = "none" | "daily" | "weekdays";
+
+export interface Utility {
   id: string;
-  kind: "alarm" | "reminder" | "timer";
+  kind: UtilityKind;
   label: string;
   /** Epoch ms of the next ring. */
   dueAt: number;
-  repeat: "none" | "daily" | "weekdays";
-  status: "scheduled" | "ringing";
+  repeat: UtilityRepeat;
+  createdAt?: number;
+  firedAt?: number | null;
+  status?: "scheduled" | "ringing" | "done" | "missed" | "cancelled";
+  /** True when it came due while ABxAG was closed (set on `utility.fired`). */
+  missed?: boolean;
+}
+
+export interface UtilityInput {
+  kind: UtilityKind;
+  label?: string;
+  /** Relative offset — the natural form for "in 5 minutes". */
+  inMinutes?: number;
+  inSeconds?: number;
+  /** Absolute epoch ms. */
+  dueAt?: number;
+  /** Local clock "HH:MM" (24h) or "7:30 pm". */
+  time?: string;
+  repeat?: UtilityRepeat;
 }
 
 // ---- confirmations & permissions --------------------------------------------------------
@@ -226,9 +250,15 @@ export const api = {
 
   // ---- alarms, reminders, timers ------------------------------------------------------------
 
-  utilities: () => request<UtilityView[]>("GET", "/api/utilities"),
-  addUtility: (input: { kind: "alarm" | "reminder" | "timer"; label?: string; time?: string; repeat?: UtilityView["repeat"] }) =>
-    request<UtilityView>("POST", "/api/utilities", input),
+  /** Upcoming (scheduled) and currently ringing alarms / reminders / timers. */
+  utilities: () => request<Utility[]>("GET", "/api/utilities"),
+  addUtility: (input: UtilityInput) =>
+    request<Utility>("POST", "/api/utilities", {
+      ...input,
+      // The runtime speaks seconds; minutes are friendlier at the call site.
+      inSeconds: input.inMinutes !== undefined ? Math.round(input.inMinutes * 60) : input.inSeconds,
+      inMinutes: undefined,
+    }),
   cancelUtility: (id: string) => request<{ ok: boolean }>("DELETE", `/api/utilities/${encodeURIComponent(id)}`),
   dismissUtility: (id: string) => request<{ ok: boolean }>("POST", `/api/utilities/${encodeURIComponent(id)}/dismiss`, {}),
   snoozeUtility: (id: string, minutes = 5) => request<unknown>("POST", `/api/utilities/${encodeURIComponent(id)}/snooze`, { minutes }),

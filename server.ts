@@ -1985,6 +1985,7 @@ async function startServer() {
           memories,
         ),
         ...(voiceStyle ? [voiceStyle] : []),
+        "TIME-BASED FOLLOW-UPS (hard rule): The moment the user asks for an alarm, a reminder, or a timer — in any language, however casually phrased (\"set an alarm in 5 minutes\", \"remind me to stretch at 6\", \"start a 10 minute timer\") — you MUST call setAlarm in the same turn, then confirm from the returned dueAtLocal. Relative requests ('in 5 minutes', '2 hours') become inMinutes; a wall-clock request ('at 6', '7:30 pm') becomes time; a countdown ('10 minutes') is kind 'timer'. NEVER reply as if it is scheduled without a successful setAlarm result — a spoken promise is not an alarm, and the user must not be misled into believing the reminder exists. If setAlarm returns an error, say plainly that it could not be set and why. Use listAlarms to answer \"what reminders do I have?\" and cancelAlarm (after listAlarms) when the user wants one removed.",
         "FINAL TURN DISCIPLINE: Contribute before you inquire. When the user makes an observation or expresses a feeling, answer with a concrete statement and normally zero questions. Never propose learning their routine, preferences, memories, or personal details as the solution to sounding human. Do not claim emotional connection. Let a complete statement end naturally. Never append a reflexive feedback check such as 'Kya bolte ho?', 'right?', 'hai na?', 'what do you think?', or 'kaisa laga?' to an already complete observation.",
       ].join("\n\n");
 
@@ -2193,6 +2194,41 @@ async function startServer() {
                       to_currency: { type: Type.STRING, description: "Three-letter target currency, e.g. INR." },
                     },
                     required: ["amount", "from_currency", "to_currency"],
+                  }
+                },
+                {
+                  name: "setAlarm",
+                  description:
+                    "Schedule a REAL alarm, reminder or timer on the user's PC. This is the only way to schedule time-based follow-ups \u2014 never claim an alarm is set without calling this. Use inMinutes for relative requests ('in 5 minutes', 'in an hour'), or time for a wall-clock time ('at 6', 'at 7:30 pm'). Returns the scheduled id and the exact local time it will ring.",
+                  parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                      kind: {
+                        type: Type.STRING,
+                        enum: ["alarm", "reminder", "timer"],
+                        description:
+                          "alarm = wakes the user at a time of day, reminder = something to recall, timer = a countdown that is done ('in 10 minutes').",
+                      },
+                      inMinutes: { type: Type.NUMBER, description: "Minutes from now. Use for 'in 5 minutes', 'in 90 minutes', 'in 2 hours'." },
+                      time: { type: Type.STRING, description: "Local clock time as 'HH:MM' (24h) or '7:30 pm'. Use for 'at 6', 'tomorrow at 9' (tomorrow: use inMinutes instead)." },
+                      label: { type: Type.STRING, description: "What it is for, in the user's words, e.g. 'stretch', 'take the pills', 'call mom'. Keep it short." },
+                      repeat: { type: Type.STRING, enum: ["none", "daily", "weekdays"], description: "Repeats. Default none. Timers are always one-shot." },
+                    },
+                    required: ["kind"],
+                  }
+                },
+                {
+                  name: "listAlarms",
+                  description: "List every upcoming or currently ringing alarm, reminder and timer with its id, kind, label and exact local due time. Use this before cancelling or to answer 'what reminders do I have?'.",
+                  parameters: { type: Type.OBJECT, properties: {} }
+                },
+                {
+                  name: "cancelAlarm",
+                  description: "Delete one alarm, reminder or timer by its id. Use listAlarms first to get the exact id. Use this when the user says a reminder should not happen.",
+                  parameters: {
+                    type: Type.OBJECT,
+                    properties: { id: { type: Type.STRING, description: "The id returned by setAlarm or listAlarms." } },
+                    required: ["id"],
                   }
                 },
 
@@ -2800,6 +2836,78 @@ async function startServer() {
                       }
                     } catch (err: any) {
                       console.error("saveCustomMemory execution failure:", err);
+                    }
+                  })();
+                } else if (fc.name === "setAlarm" || fc.name === "listAlarms" || fc.name === "cancelAlarm") {
+                  // Alarms / reminders / timers. Local, reversible, no
+                  // permission gate: but the model MUST go through here before
+                  // telling the user anything is scheduled.
+                  (async () => {
+                    const respond = (output: unknown) =>
+                      session.sendToolResponse({
+                        functionResponses: [{ name: fc.name, response: { output }, id: fc.id }],
+                      });
+                    const utils = runtime.utilities;
+                    if (!utils) {
+                      respond({ ok: false, error: "The alarm scheduler is not available yet. Try again in a moment." });
+                      return;
+                    }
+                    try {
+                      const args = (fc.args ?? {}) as Record<string, unknown>;
+                      if (fc.name === "listAlarms") {
+                        const items = utils.list();
+                        respond({
+                          ok: true,
+                          alarms: items.map((u) => ({
+                            id: u.id,
+                            kind: u.kind,
+                            label: u.label,
+                            repeat: u.repeat,
+                            status: u.status,
+                            dueAt: u.dueAt,
+                            dueAtLocal: new Date(u.dueAt).toLocaleString(),
+                          })),
+                        });
+                        return;
+                      }
+                      if (fc.name === "cancelAlarm") {
+                        const id = String(args.id || "");
+                        const ok = await utils.cancel(id);
+                        respond({ ok, cancelled: id, message: ok ? "Cancelled." : "No alarm with that id." });
+                        return;
+                      }
+                      const kind = (String(args.kind || "reminder") as "alarm" | "reminder" | "timer");
+                      const label = args.label ? String(args.label).slice(0, 200) : undefined;
+                      const repeat = (String(args.repeat || "none") as "none" | "daily" | "weekdays");
+                      const inMinutes = args.inMinutes !== undefined && args.inMinutes !== null ? Number(args.inMinutes) : undefined;
+                      const time = args.time ? String(args.time) : undefined;
+                      if (inMinutes === undefined && !time) {
+                        respond({
+                          ok: false,
+                          error: "Give either inMinutes ('in 5 minutes') or a time ('at 6', '7:30 pm').",
+                        });
+                        return;
+                      }
+                      const created = await utils.add({
+                        kind,
+                        label,
+                        repeat,
+                        ...(inMinutes !== undefined ? { inSeconds: Math.round(Math.max(0.05, inMinutes) * 60) } : {}),
+                        ...(time ? { time } : {}),
+                      });
+                      respond({
+                        ok: true,
+                        id: created.id,
+                        kind: created.kind,
+                        label: created.label,
+                        repeat: created.repeat,
+                        dueAt: created.dueAt,
+                        dueAtLocal: new Date(created.dueAt).toLocaleString(),
+                        message: `Set: ${created.kind} "${created.label}" at ${new Date(created.dueAt).toLocaleTimeString()}.`,
+                      });
+                    } catch (err) {
+                      console.error("alarm tool failure:", err);
+                      respond({ ok: false, error: err instanceof Error ? err.message : "Could not schedule that." });
                     }
                   })();
                 } else if (fc.name === "confirmPendingAction") {

@@ -7,7 +7,7 @@
  * so a dropped socket never leaves stale HUD state behind.
  */
 import { useEffect, useRef, useState } from "react";
-import { api, type ConfirmationRequest, type ModelSelection, type TaskView } from "./appApi";
+import { api, type ConfirmationRequest, type ModelSelection, type TaskView, type Utility } from "./appApi";
 
 export interface ModelNotice {
   id: number;
@@ -43,9 +43,15 @@ export interface AppEventsState {
   selection: ModelSelection | null;
   notices: ModelNotice[];
   stopped: { reason: string; tasks: number; at: number } | null;
+  /**
+   * Alarms / reminders / timers that are ringing right now. Filled from
+   * `utility.fired` on /events and re-seeded from GET /api/utilities on every
+   * (re)connect, so a ring that started while the socket was down still shows.
+   */
+  alarms: Utility[];
 }
 
-const INITIAL: AppEventsState = { connected: false, tasks: {}, confirmations: [], questions: {}, selection: null, notices: [], stopped: null };
+const INITIAL: AppEventsState = { connected: false, tasks: {}, confirmations: [], questions: {}, selection: null, notices: [], stopped: null, alarms: [] };
 
 /** Human wording for model.status events (models/router.ts). */
 function describeModelStatus(payload: Record<string, unknown>): string | null {
@@ -80,12 +86,24 @@ export function useAppEvents(enabled = true): AppEventsState {
 
     const resync = async () => {
       try {
-        const [tasks, confirmations] = await Promise.all([api.tasks(10), api.confirmations()]);
+        const [tasks, confirmations, utilities] = await Promise.all([
+          api.tasks(10),
+          api.confirmations(),
+          api.utilities().catch(() => [] as Utility[]),
+        ]);
         if (disposed) return;
         setState((s) => ({
           ...s,
           tasks: Object.fromEntries(tasks.map((task) => [task.id, task])),
           confirmations,
+          // Anything still ringing — or missed while ABxAG was closed, whose
+          // startup publish we likely missed — must light up the card.
+          alarms: [
+            ...s.alarms,
+            ...utilities
+              .filter((u) => (u.status === "ringing" || u.status === "missed") && !s.alarms.some((a) => a.id === u.id))
+              .map((u) => ({ ...u, status: "ringing" as const, missed: u.status === "missed" || u.missed === true })),
+          ],
         }));
       } catch {
         /* backend still starting; the socket replay covers active tasks */
@@ -126,6 +144,23 @@ export function useAppEvents(enabled = true): AppEventsState {
             const p = payload as { reason: string; tasks: number };
             return { ...s, stopped: { reason: p.reason, tasks: p.tasks, at: Date.now() } };
           }
+          case "utility.fired": {
+            // An alarm / reminder / timer came due. The ring is a real
+            // attention moment: the main app shows the alarm card with
+            // snooze / dismiss, the dolls wave and the companion shell grows
+            // her window (shell gets it over its own ipc, not this socket).
+            const utility = payload as Utility;
+            if (utility && typeof utility === "object" && typeof utility.id === "string") {
+              const ringing: Utility = { ...utility, status: "ringing" };
+              setState((s) => ({ ...s, alarms: [...s.alarms.filter((a) => a.id !== ringing.id), ringing] }));
+            }
+            try {
+              window.dispatchEvent(new CustomEvent("abxag:alarm-fired", { detail: payload }));
+            } catch {
+              /* headless test env */
+            }
+            return s;
+          }
           case "character.command": {
             // Stage direction for the live 3D character (and App, for
             // switches). Re-emitted as a window event so ABxAGCharacter and
@@ -138,18 +173,6 @@ export function useAppEvents(enabled = true): AppEventsState {
               /* headless test env */
             }
             postToCompanion({ command: payload });
-            return s;
-          }
-          case "utility.fired": {
-            // An alarm / reminder / timer came due. The ring is a real
-            // attention moment: the main app shows the alarm card with
-            // snooze / dismiss, the dolls wave and the companion shell grows
-            // her window (shell gets it over its own ipc, not this socket).
-            try {
-              window.dispatchEvent(new CustomEvent("abxag:alarm-fired", { detail: payload }));
-            } catch {
-              /* headless test env */
-            }
             return s;
           }
           default:

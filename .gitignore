@@ -14,6 +14,13 @@ cognition/*.json
 *.pfx
 *.p12
 csc-*.txt
+# Live user state written next to the checkout while testing locally.
+# These hold real API keys and personal data at runtime — never commit them.
+secrets.json
+secrets.v2.json
+settings.json
+memories.json
+start-abxag-silent.bat
 # Build & release artifacts (regenerated locally; installers are ~150MB)
 release/
 release-public/

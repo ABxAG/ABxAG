@@ -18,7 +18,7 @@ import type { ABxAGSettings } from "../lib/settingsStore";
 import { api, LOCKED_CAPABILITIES, type AppSettings, type AppSettingsPatch, type Decision, type ModelCatalogue, type PermissionsView, type MessageConfirmationMode } from "../lib/appApi";
 import { ModelSelectorPanel } from "./ModelSelector";
 import { AboutUpdates, UpdatesSection } from "./AboutUpdates";
-import { AlarmsSection } from "./AlarmsSection";
+import { AlarmPanel } from "./AlarmPanel";
 
 export type SettingsSection = "general" | "ai" | "voice" | "agent" | "overlay" | "privacy" | "presence" | "character" | "system" | "about";
 
@@ -430,7 +430,7 @@ function SystemSection({ app, patch, onRestartOnboarding }: { app: AppSettings; 
         <UpdatesSection app={app} onPatch={patch} />
       </Group>
       <Group title="Alarms & reminders" hint="When one rings she grows big on your desktop, waves, and a card appears — even if no voice session is connected. Chat works too: just say or type what and when.">
-        <AlarmsSection />
+        <AlarmPanel />
       </Group>
       <Group title="Desktop control agent">
         <Row label={agent.online ? "Running" : "Not running"} description={agent.online ? `${agent.toolCount ?? 0} PC tools available` : "ABxAG starts it automatically. If it stays offline, restart ABxAG."}>
