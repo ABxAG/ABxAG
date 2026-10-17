@@ -117,6 +117,12 @@
   50% { transform: scale(1.06); }
 }
 
+/* Alarm/reminder ring card pops in with a small springy rise. */
+@keyframes alarm-pop {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .cyber-frame-grid { animation: cyber-frame-drift 26s linear infinite; }
   .cyber-orb { animation: cyber-orb-breathe 3.2s ease-in-out infinite; }

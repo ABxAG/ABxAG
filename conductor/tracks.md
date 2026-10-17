@@ -9,3 +9,4 @@
 - [site-hud-content](./tracks/site-hud-content/index.md) — Website content: HUD overlay spotlight, Era 6, FAQ
 - [lightfast](./tracks/lightfast/index.md) — Lightweight & fast: prune installer weight, keep boot fast
 - [settings-system-update](./tracks/settings-system-update/index.md) - Settings: updater UI moved to System > Update (move-only)
+- [alarm-ring](./tracks/alarm-ring/index.md) - Alarm & reminder ring: doll grows + waves, ring card, Settings list

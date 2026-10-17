@@ -49,6 +49,19 @@ export interface TaskView {
 
 export type TaskAction = "stop" | "pause" | "resume" | "takeover" | "return" | "answer" | "continue";
 
+// ---- alarms, reminders & timers -----------------------------------------------------------
+
+/** Shape of one entry from GET /api/utilities (Upcoming always). */
+export interface UtilityView {
+  id: string;
+  kind: "alarm" | "reminder" | "timer";
+  label: string;
+  /** Epoch ms of the next ring. */
+  dueAt: number;
+  repeat: "none" | "daily" | "weekdays";
+  status: "scheduled" | "ringing";
+}
+
 // ---- confirmations & permissions --------------------------------------------------------
 
 export interface ConfirmationRequest {
@@ -210,6 +223,15 @@ export const api = {
   startTask: (goal: string) => request<TaskView>("POST", "/api/tasks", { goal, origin: "text" }),
   taskAction: (id: string, action: TaskAction, text?: string) => request<unknown>("POST", `/api/tasks/${encodeURIComponent(id)}/${action}`, text === undefined ? {} : { text }),
   emergencyStop: () => request<{ stopped: number }>("POST", "/api/autonomy/stop", { reason: "stop_button" }),
+
+  // ---- alarms, reminders, timers ------------------------------------------------------------
+
+  utilities: () => request<UtilityView[]>("GET", "/api/utilities"),
+  addUtility: (input: { kind: "alarm" | "reminder" | "timer"; label?: string; time?: string; repeat?: UtilityView["repeat"] }) =>
+    request<UtilityView>("POST", "/api/utilities", input),
+  cancelUtility: (id: string) => request<{ ok: boolean }>("DELETE", `/api/utilities/${encodeURIComponent(id)}`),
+  dismissUtility: (id: string) => request<{ ok: boolean }>("POST", `/api/utilities/${encodeURIComponent(id)}/dismiss`, {}),
+  snoozeUtility: (id: string, minutes = 5) => request<unknown>("POST", `/api/utilities/${encodeURIComponent(id)}/snooze`, { minutes }),
 
   confirmations: () => request<ConfirmationRequest[]>("GET", "/api/confirmations"),
   resolveConfirmation: (id: string, approved: boolean, remember: "once" | "session" = "once") =>

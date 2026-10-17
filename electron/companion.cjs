@@ -67,6 +67,7 @@ class CompanionManager {
     this.metrics = { walkSpeed: 160, heightPx: 500, halfWidthPx: 60, floorY: BASE_HEIGHT - 1 };
     this.hiddenForFullscreen = false;
     this.hiddenSide = null;
+    this.alarmHold = false; // true while the alarm-moment owns the window bounds
     this.timers = new Set();
     this.cursorTimer = null;
     this.physicsTimer = null;
@@ -325,6 +326,7 @@ class CompanionManager {
 
   resize() {
     if (!this.win) return;
+    if (this.alarmHold) return; // the alarm moment owns the bounds until it ends
     const { width, height } = this.size();
     const [w, h] = this.win.getSize();
     if (w === width && h === height) return;
@@ -1257,6 +1259,7 @@ class CompanionManager {
 
   /** Called every second; decides what she does next when she's left alone. */
   think() {
+    if (this.alarmHold) return; // the alarm moment owns what happens next
     if (!this.win || this.hiddenForFullscreen || this.drag || this.motion) return;
     if (this.hanging) {
       if (Date.now() >= this.nextThought) {
@@ -1350,6 +1353,55 @@ class CompanionManager {
     }
   }
 
+  /**
+   * An alarm or reminder just fired: she becomes the moment. Fade the window
+   * out, grow it to ~2.2× with her feet still on the surface, hold briefly,
+   * then fade back to the exact bounds she had. Skipped for states where a
+   * resize would fight the shell (hanging, lying, walking, hidden) — the
+   * broadcast wave already covers those.
+   */
+  async alarmMoment() {
+    if (!this.win || this.win.isDestroyed() || this.alarmHold) return;
+    if (this.hiddenForFullscreen || this.drag || this.motion) return;
+    if (this.mode !== 'standing' && this.mode !== 'sitting') return;
+    if (this.anchor.kind !== 'ground') {
+      // Anchored to a window ledge: grow would shift mid-ledge — just wave.
+      this.command({ act: 'perform', name: 'wave' });
+      return;
+    }
+    const before = this.win.getBounds();
+    const area = this.area();
+    // Room check: never taller than 80 % of the work area, never wider than it.
+    const roomK = Math.min((area.height * 0.8) / before.height, 2.2);
+    const k = Math.max(1.2, roomK);
+    const width = Math.min(Math.round(before.width * k), area.width);
+    const height = Math.round(before.height * (width / before.width));
+    const surface = this.surfaceY();
+    const centre = before.x + before.width / 2;
+    const dst = {
+      x: Math.round(centre - width / 2),
+      y: Math.round(surface - height),
+      width,
+      height,
+    };
+    this.alarmHold = true;
+    this.log(`alarm moment ×${k.toFixed(2)} (${this.mode})`);
+    try {
+      await this.fade(async () => {
+        this.win.setBounds(dst);
+        this.mode = 'standing';
+        this.command({ act: 'perform', name: 'wave' });
+      });
+      await this.sleep(9000);
+      await this.fade(async () => {
+        this.win.setBounds(before);
+      });
+    } finally {
+      this.alarmHold = false;
+      this.keepOnScreen();
+    }
+  }
+
   /** Commands from the backend (voice / chat: "come here", "put the icons back"). */
   handleCommand(command) {
     // Full body control: "perform:<action>" (jump/wave/dance/backflip/…)
@@ -1362,6 +1414,9 @@ class CompanionManager {
     switch (command) {
       case 'come_here':
         this.summon();
+        break;
+      case 'alarm_attention':
+        void this.alarmMoment();
         break;
       case 'restore_icons':
         void this.restoreIcons();
