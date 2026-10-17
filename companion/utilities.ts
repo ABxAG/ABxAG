@@ -59,12 +59,30 @@ export class UtilityScheduler {
     return missed;
   }
 
+  /**
+   * Upcoming (scheduled), currently ringing, and still-unacknowledged missed
+   * entries. Missed ones are kept visible on purpose: they were created while
+   * ABxAG was closed, and the `utility.fired` publish for them happens at
+   * startup — usually before the renderer's socket has connected — so this
+   * list is the only reliable way the user still learns about them. They
+   * disappear on dismiss (one-shot) or roll to the next occurrence (repeat).
+   */
   list(): Utility[] {
-    return this.items.filter((item) => item.status === "scheduled" || item.status === "ringing").sort((a, b) => a.dueAt - b.dueAt);
+    return this.items
+      .filter((item) => item.status === "scheduled" || item.status === "ringing" || item.status === "missed")
+      .sort((a, b) => a.dueAt - b.dueAt);
   }
 
   async add(input: { kind: Utility["kind"]; label?: string; dueAt?: number; inSeconds?: number; time?: string; repeat?: Utility["repeat"] }): Promise<Utility> {
-    const dueAt = input.dueAt ?? (input.inSeconds !== undefined ? this.now() + Math.max(1, input.inSeconds) * 1000 : input.time ? parseClock(input.time, this.now()) : NaN);
+    // Guard the offsets: a model-supplied negative, zero, NaN or absurd value
+    // must fail loudly instead of quietly becoming "in one second" (which used
+    // to look like the alarm was set, then rang at once).
+    if (input.inSeconds !== undefined) {
+      const seconds = Number(input.inSeconds);
+      if (!Number.isFinite(seconds) || seconds <= 0) throw new Error("A future time is required.");
+    }
+    if (input.dueAt !== undefined && !Number.isFinite(Number(input.dueAt))) throw new Error("A future time is required.");
+    const dueAt = input.dueAt ?? (input.inSeconds !== undefined ? this.now() + Number(input.inSeconds) * 1000 : input.time ? parseClock(input.time, this.now()) : NaN);
     if (!Number.isFinite(dueAt) || dueAt <= this.now()) throw new Error("A future time is required.");
     if (dueAt - this.now() > 366 * 86_400_000) throw new Error("That is too far in the future.");
     const item: Utility = {
@@ -167,7 +185,7 @@ export function parseClock(value: string, now: number): number {
   return date.getTime();
 }
 
-function nextOccurrence(from: number, repeat: Utility["repeat"], now: number): number {
+export function nextOccurrence(from: number, repeat: Utility["repeat"], now: number): number {
   const date = new Date(from);
   do {
     date.setDate(date.getDate() + 1);

@@ -1,5 +1,33 @@
 [
   {
+    "tag": "v1.1.21",
+    "date": "2026-10-18T00:00:00Z",
+    "title": null,
+    "notes": "## ABxAG v1.1.21\n\n### Fixed\n- **Alarms, reminders and timers actually work now.** Saying *\"set an alarm in 5 minutes\"* really schedules one: ABxAG now has a scheduling tool she must call before confirming anything, so she can no longer just *say* it is set. She reports the exact local time back from the scheduler's own result, and if scheduling fails she says so instead of pretending.\n- **The reminder ring shows up.** Alarms that fire while ABxAG is closed are caught and shown, marked as missed, instead of being silently dropped.\n- **Bad times are refused loudly.** A negative, zero or unparseable time used to be coerced into \"one second from now\" — which rang immediately and read as a five-minute reminder.\n- Repaired the half-finished settings refactor: the alarms panel was left unmounted, so the feature had no UI at all.\n\n### New\n- **Settings > System > Alarms & reminders:** add upcoming alarms/reminders/timers (kind, time, label, daily/weekdays repeat), and snooze, dismiss or cancel any of them.\n- **Ask her instead:** *\"remind me to stretch at 6\"*, *\"start a 10 minute timer\"*, *\"what reminders do I have?\"*, *\"cancel that reminder\"*.\n- Unacknowledged rings fade on their own after 90 s instead of sitting on screen forever.\n\n### Verified\n- tsc clean · 108 agent (9 new alarm-scheduler tests) + 8 character + 32 Python tests green\n- Schedules persist across restarts; the runtime keeps them, not the UI\n- Public build: no bundled character models, users import their own on first run",
+    "assets": [
+      {
+        "name": "ABxAG-Portable-1.1.21.exe",
+        "size": 0,
+        "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.21/ABxAG-Portable-1.1.21.exe"
+      },
+      {
+        "name": "ABxAG-Setup-1.1.21.exe",
+        "size": 0,
+        "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.21/ABxAG-Setup-1.1.21.exe"
+      },
+      {
+        "name": "ABxAG-Setup-1.1.21.exe.blockmap",
+        "size": 0,
+        "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.21/ABxAG-Setup-1.1.21.exe.blockmap"
+      },
+      {
+        "name": "latest.yml",
+        "size": 0,
+        "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.21/latest.yml"
+      }
+    ]
+  },
+  {
     "tag": "v1.1.20",
     "date": "2026-10-17T23:12:05Z",
     "title": null,
