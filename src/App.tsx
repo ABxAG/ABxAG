@@ -28,6 +28,7 @@ import { MemoryDashboard } from "./components/MemoryDashboard";
 import { SettingsPanel, type SettingsSection } from "./components/SettingsPanel";
 import { TaskHud } from "./components/TaskHud";
 import { UpdatePrompt } from "./components/UpdatePrompt";
+import { AlarmCard } from "./components/AlarmCard";
 import { useCharacterAutonomy } from "./lib/useCharacterAutonomy";
 import { TERMINAL_TASK_STATES } from "./lib/appApi";
 import { ModelChip } from "./components/ModelSelector";
@@ -1258,6 +1259,10 @@ export default function App() {
 
       {/* Post-update reminder: small daily popup when a newer version exists. */}
       <UpdatePrompt app={appSettings} onPatch={handleAppSettingsChange} />
+
+      {/* Alarm / reminder ring card (snooze / dismiss) — the always-visible
+          half of the ring, even when no voice session is connected. */}
+      <AlarmCard />
 
       <AnimatePresence>
         {showOnboarding && appSettings && (

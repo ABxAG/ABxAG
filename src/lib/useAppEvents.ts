@@ -140,6 +140,18 @@ export function useAppEvents(enabled = true): AppEventsState {
             postToCompanion({ command: payload });
             return s;
           }
+          case "utility.fired": {
+            // An alarm / reminder / timer came due. The ring is a real
+            // attention moment: the main app shows the alarm card with
+            // snooze / dismiss, the dolls wave and the companion shell grows
+            // her window (shell gets it over its own ipc, not this socket).
+            try {
+              window.dispatchEvent(new CustomEvent("abxag:alarm-fired", { detail: payload }));
+            } catch {
+              /* headless test env */
+            }
+            return s;
+          }
           default:
             return s;
         }

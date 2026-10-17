@@ -433,6 +433,11 @@ export class ABxAGRuntime {
     this.social.event("alarm");
     appEvents.publish("utility.fired", { ...utility, missed: event.missed });
     appEvents.publish("character.cue", { cue: "alarm", label: utility.label });
+    // The ring must land without a connected voice session too: both dolls
+    // wave (this fans out over /events and the companion BroadcastChannel),
+    // and the desktop-companion shell grows her window for a moment.
+    this.characterCommand({ kind: "action", action: "wave", target: "both" });
+    this.companionCommand("alarm_attention");
     this.notify(utility.kind === "timer" ? "Timer done" : utility.kind === "alarm" ? "Alarm" : "Reminder", utility.label);
     const verdict = this.conversation.request({ reason: utility.kind === "reminder" ? "reminder" : "alarm", priority: utility.kind === "alarm" ? "critical" : "high", key: `utility:${utility.id}:${utility.dueAt}` });
     const hook = [...this.live.values()].at(-1);
