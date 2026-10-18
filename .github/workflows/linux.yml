@@ -61,9 +61,9 @@ jobs:
           xvfb-run -a "$APPIMAGE" --no-sandbox > /tmp/abxag-smoke.log 2>&1 &
           APID=$!
           echo "App PID: $APID"
-          # Wait for the packaged backend on :47130 (up to ~100s).
+          # Wait for the packaged backend on :369 (up to ~100s).
           for i in $(seq 1 50); do
-            if curl -sf -o /dev/null http://127.0.0.1:47130/; then
+            if curl -sf -o /dev/null http://127.0.0.1:369/; then
               echo "Backend responded after ~$((i * 2))s"; break
             fi
             sleep 2
@@ -71,7 +71,7 @@ jobs:
               echo "FAIL: app exited early"; tail -n 60 /tmp/abxag-smoke.log; exit 1
             fi
           done
-          curl -sf -o /dev/null http://127.0.0.1:47130/ || { echo "FAIL: backend never responded"; tail -n 60 /tmp/abxag-smoke.log; kill $APID; exit 1; }
+          curl -sf -o /dev/null http://127.0.0.1:369/ || { echo "FAIL: backend never responded"; tail -n 60 /tmp/abxag-smoke.log; kill $APID; exit 1; }
           # Agent must be skipped on Linux, never spawned.
           LOGDIR="$HOME/.config/ABxAG/logs"
           grep -q "AGENT_SPAWN_SKIPPED_NONWINDOWS" "$LOGDIR/startup.log" || { echo "FAIL: skip marker missing"; ls "$LOGDIR"; kill $APID; exit 1; }

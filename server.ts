@@ -3412,8 +3412,8 @@ async function startServer() {
     // The loopback address is what we bind (the alias resolves to it), and the
     // friendly name is what a human should type or bookmark.
     const friendly = localBaseUrl(PORT);
-    logStartup(`ABxAG V2 server started on http://localhost:${PORT} (also ${friendly})`);
-    console.log(`[Server] Running on http://localhost:${PORT} · ${friendly}`);
+    logStartup(`ABxAG server started on ${friendly} (also http://127.0.0.1:${PORT})`);
+    console.log(`[Server] ${friendly} - http://127.0.0.1:${PORT}`);
     // Kick off the desktop agent (probe + auto-spawn) immediately on boot.
     ensureDesktopAgent()
       .then(async () => {

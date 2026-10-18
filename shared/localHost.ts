@@ -1,24 +1,40 @@
 /**
  * The machine-local names ABxAG answers to.
  *
- * `abxag.local` is the friendly alias for the loopback server: it is the name
- * in the address bar, in browser tabs and in anything else that wants to point
- * at ABxAG without hard-coding a port-less IP. It has to be treated as a
- * loopback name everywhere the old `localhost` / `127.0.0.1` checks live, or
- * the server answers 403 to its own alias.
+ * `abxag` is the project's local domain: the name in the address bar, in
+ * browser tabs and in anything else that points at ABxAG without hard-coding an
+ * IP. It is mapped to loopback in the hosts file and has to be treated as a
+ * loopback name everywhere the old `localhost` / `127.0.0.1` checks live, or the
+ * server answers 403 to its own alias.
+ *
+ * `abxag.local` is kept as an alias because it was the earlier name and is
+ * already registered on existing machines; both resolve to the same interface.
  *
  * Security note: these predicates gate the entire API and the live WebSocket,
  * because they are what stands between a web page and ABxAG's memory, screen
  * and desktop. They therefore match whole hostnames only - a substring or
- * suffix match would let `abxag.local.attacker.example` through, and
- * `.local` being an mDNS name makes suffix tricks easy to write by accident.
+ * suffix match would let `abxag.example.com` through, and a name this short
+ * makes suffix tricks easy to write by accident.
  */
 
 /** The friendly name, without scheme or port. */
-export const LOCAL_HOSTNAME = "abxag.local";
+export const LOCAL_HOSTNAME = "abxag";
+
+/** Earlier alias, still accepted so existing hosts entries keep working. */
+export const LOCAL_HOSTNAME_ALIAS = "abxag.local";
+
+/** The port the installed app serves on. */
+export const LOCAL_PORT = 369;
 
 /** Every hostname that identifies this machine's loopback interface. */
-export const LOCAL_HOSTNAMES: readonly string[] = ["localhost", "127.0.0.1", "[::1]", "::1", LOCAL_HOSTNAME];
+export const LOCAL_HOSTNAMES: readonly string[] = [
+  "localhost",
+  "127.0.0.1",
+  "[::1]",
+  "::1",
+  LOCAL_HOSTNAME,
+  LOCAL_HOSTNAME_ALIAS,
+];
 
 /**
  * Split a `Host` header into its hostname, lower-cased and without brackets
@@ -61,6 +77,6 @@ export function isLocalOrigin(value: string | undefined | null): boolean {
 }
 
 /** The base URL a client should use, for messages and diagnostics. */
-export function localBaseUrl(port: number): string {
+export function localBaseUrl(port: number = LOCAL_PORT): string {
   return `http://${LOCAL_HOSTNAME}:${port}`;
 }

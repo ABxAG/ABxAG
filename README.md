@@ -4,7 +4,7 @@
 
 <h1 align="center">ABxAG</h1>
 
-<p align="center">Current version: <b>v1.1.24</b> · <a href="https://github.com/ABxAG/ABxAG/releases">changelog</a></p>
+<p align="center">Current version: <b>v1.1.25</b> · <a href="https://github.com/ABxAG/ABxAG/releases">changelog</a></p>
 
 <p align="center">
   <b>Your private 3D AI desktop companion.</b><br />
@@ -69,21 +69,33 @@ npm run dev        # → http://localhost:3000
 npm run app        # desktop app (Electron + companion)
 ```
 
-**`abxag.local`** is the friendly name for ABxAG's loopback server
-(`http://abxag.local:3000` in dev, whatever port the installed app picked at
-runtime). It is a loopback name, so the API and the live socket treat it exactly
-like `127.0.0.1`.
+**`abxag`** is this project's local domain, and **port 369** is where the
+installed app serves. So the interface has one address to remember and no port
+guessing:
+
+```
+http://abxag:369
+```
+
+It is a loopback name, so the API and the live socket treat it exactly like
+`127.0.0.1` — the alias is only a nicer way to type the address. `127.0.0.1:369`
+keeps working, and the app falls back to it automatically on a machine where the
+name is not registered.
 
 ```powershell
 npm run setup:host          # add the hosts entry (asks for admin once)
 npm run setup:host:remove   # take it away again
 ```
 
-`.local` is reserved for mDNS (RFC 6762) and Windows ships no mDNS responder, so
-the name is mapped in the hosts file instead. That covers Edge, curl, Node and
-PowerShell. **Chrome and Chromium ignore the hosts file for `.local`** and ask
-mDNS instead: use Edge, or start the browser with
-`--host-resolver-rules="MAP abxag.local 127.0.0.1"`.
+The hosts file is the mechanism that actually works on Windows: it covers
+Edge, curl, Node, PowerShell and anything else that goes through the Windows
+resolver. `abxag.local` is registered alongside it as an alias, for links and
+bookmarks made earlier.
+
+The server binds IPv4 loopback only, on purpose: exposing ABxAG on the LAN
+would publish the whole API — memory, screen, desktop control — to every machine
+on the network, so it is not something a host name alone can grant. `abxag`
+resolves to this machine and nothing else.
 
 The first screen asks for your Gemini API key — stored encrypted with Windows
 DPAPI in your user-data folder, never in the project. Optional: copy

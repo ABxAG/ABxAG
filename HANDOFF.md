@@ -31,7 +31,7 @@ PR #26 lightfast → v1.1.18.
    (parent = explorer.exe) right after every `dist:public` build — the user
    launches it manually. It is NOT yours: never touch it.
 2. **Test ports:** dev server `127.0.0.1:3000`, agent `:8765`, backend
-   `47130+`, website previews `8901+` (pick a free one, kill YOUR server
+   `369`, website previews `8901+` (pick a free one, kill YOUR server
    afterwards). Before any smoke test, confirm the port is free AND that
    the responder is YOUR process (stale agents on :8765 give false results
    — check `/tools` count or the startup log line `Loaded N desktop tools`).
@@ -101,7 +101,7 @@ PR #26 lightfast → v1.1.18.
 5. Verify: exe FileVersionInfo = new version; runtime exe FileDescription =
    ABxAG; `electron-updater` present under `win-unpacked/.../node_modules`;
    fresh `dist/assets/index-*.js` newer than sources; portable smoke test by
-   PID only (backend `:47130` OK, agent 84 tools, emergency stop OK via
+   PID only (backend `:369` (`abxag:369`) OK, agent 84 tools, emergency stop OK via
    `POST /api/autonomy/stop`, kill ONLY your tree afterwards).
 6. `gh release create v<V> <setup> <portable> latest.yml <setup>.blockmap
    --title "ABxAG v<V>" --notes "<New / Fixed sections>" --target DEV`;
