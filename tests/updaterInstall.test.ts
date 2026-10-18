@@ -96,7 +96,10 @@ test("silent auto-install passes /S and quits", async () => {
     u.installDownloaded(true);
     await sleep(3000);
     assert.equal(spawnCalls.length, 1);
-    assert.deepEqual(spawnCalls[0].args, ["/S"]);
+    // /S alone would install silently and never start the app again: the
+    // assisted NSIS installer only runs the app when it is NOT silent, unless
+    // --force-run is present.
+    assert.deepEqual(spawnCalls[0].args, ["/S", "--force-run"]);
     assert.equal(spawnCalls[0].file, installer);
     assert.equal(quit.called, true);
   } finally {
@@ -153,7 +156,44 @@ test("an interactive install is left alone: its finish page already relaunches",
   }
 });
 
-test("a portable build cannot relaunch itself and says so instead of failing silently", async () => {
+test("the updater leaves a log behind, because the install runs just before exit", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "abxag-update-log-"));
+  const spawnCalls: Array<{ file: string; args: string[] }> = [];
+  const quit = { called: false };
+  const installer = makeTmpInstaller();
+  try {
+    const u = createUpdater({
+      app: {
+        getVersion: () => "1.1.23",
+        isPackaged: true,
+        getPath: (name: string) => (name === "userData" ? dir : "C:\\APPs\\ABxAG\\ABxAG.exe"),
+        quit: () => { quit.called = true; },
+      },
+      shell: {},
+      BrowserWindow: { getAllWindows: () => [] },
+      spawnFn: (file: string, args: string[]) => {
+        spawnCalls.push({ file, args });
+        return { unref: () => {}, pid: 99 };
+      },
+    });
+    u._setTestState({ status: "downloaded", downloadedVersion: "9.9.9", downloadedFile: installer });
+    u.installDownloaded(true);
+    await sleep(3000); // the install deliberately runs just before the exit
+  } finally {
+    fs.rmSync(installer, { force: true });
+  }
+  try {
+    // The installer runs and then the process exits, so a console-only log
+    // would leave no evidence of the flags that decide whether ABxAG restarts.
+    const log = fs.readFileSync(path.join(dir, "logs", "updates.log"), "utf8");
+    assert.match(log, /launching installer/);
+    assert.match(log, /--force-run/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a portable build cannot relaunch itself and is not asked to", async () => {
   const spawnCalls: Array<{ file: string; args: string[] }> = [];
   const schtasksCalls: string[][] = [];
   const quit = { called: false };

@@ -19,6 +19,24 @@ const path = require('path');
 const os = require('os');
 const { spawn, execFileSync } = require('child_process');
 const { resolveScriptPath } = require('./scriptPath.cjs');
+const fsLog = require('fs');
+
+/**
+ * Updater log that survives the process.
+ *
+ * Everything here runs immediately before ABxAG quits for an install, when the
+ * only trace would otherwise be a console nobody sees in a packaged build.
+ * "It updated but did not come back" is impossible to diagnose without this.
+ */
+function appendUpdateLog(app, line) {
+  try {
+    const dir = path.join(app.getPath('userData'), 'logs');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.appendFileSync(path.join(dir, 'updates.log'), `[${new Date().toISOString()}] ${line}\n`);
+  } catch {
+    /* logging is best-effort */
+  }
+}
 
 const RELEASES_URL = 'https://api.github.com/ABxAG/ABxAG/releases?per_page=20';
 // Same feed, mirrored on our own site: api.github.com is unreachable from
@@ -228,7 +246,14 @@ function cleanupStaleInstallers(tmpDir, keepNewest = true, log = () => {}) {
   return { removed, bytes };
 }
 
-function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = null, schtasksFn = null, autoUpdater = null }) {
+function createUpdater({ app, shell, BrowserWindow, log: injectedLog = null, spawnFn = null, schtasksFn = null, autoUpdater = null }) {
+  // Every updater step is mirrored into %APPDATA%\ABxAG\logs\updates.log. The
+  // install sequence runs right before the process exits, so a console-only
+  // log leaves no trace of what happened when a relaunch does not.
+  const log = (message) => {
+    try { injectedLog?.(message); } catch { /* ignore */ }
+    appendUpdateLog(app, String(message).replace(/^\[updates\]\s*/, ''));
+  };
   // Run once per app start: C: must not grow with every release.
   try {
     cleanupStaleInstallers(os.tmpdir(), undefined, log);
@@ -499,7 +524,9 @@ function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = nu
       set({ status: 'installing' });
       log(`[updates] quitAndInstall differential ${state.downloadedVersion || ''}${useSilent ? ' silently' : ''}.`);
       try {
-        stagedAu.quitAndInstall(useSilent, useSilent);
+        // Always force the run: with isSilent, electron-updater otherwise
+        // follows the same installSection.nsh rule and does not restart us.
+        stagedAu.quitAndInstall(useSilent, true);
       } catch (err) {
         installing = false;
         set({ status: 'error', error: `Could not install the update (${err instanceof Error ? err.message : err}).` });
@@ -515,14 +542,16 @@ function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = nu
       set({ status: 'error', error: 'The downloaded installer is gone — please download again.' });
       return snapshot();
     }
-    // Silent installs need the installed (non-portable) build; otherwise the
-    // interactive wizard runs so the user sees where it goes.
+    // Silent installs need /S, and they also need --force-run: the assisted
+    // NSIS installer only starts the app when it is NOT silent, unless that
+    // flag is present (see electron-builder's installSection.nsh). Without it
+    // the update applies and the user is left with a closed program.
     const useSilent = Boolean(silent) && canSilentInstall;
     installing = true;
     set({ status: 'installing' });
     const installer = state.downloadedFile;
-    const args = useSilent ? ['/S'] : [];
-    log(`[updates] launching installer ${installer}${useSilent ? ' silently (/S)' : ''} and quitting.`);
+    const args = useSilent ? ['/S', '--force-run'] : [];
+    log(`[updates] launching installer ${installer}${useSilent ? ' silently (/S --force-run)' : ''} and quitting.`);
     // Give the backend/agent time to exit so no file is locked when the
     // installer runs (silent installs start at once; the wizard's clicks
     // naturally buy the same time for interactive installs).
@@ -533,7 +562,9 @@ function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = nu
         const child = spawnInstaller(installer, args, { detached: true, stdio: 'ignore', windowsHide: false });
         installerPid = child && typeof child.pid === 'number' ? child.pid : 0;
         if (child && typeof child.unref === 'function') child.unref();
-        // Silent installs get no finish page, so nothing else would restart us.
+        // Backstop only: --force-run starts the app itself. If that ever fails
+        // on a machine, this picks it up a minute later — and steps aside when
+        // the app is already running, so the two cannot double-launch.
         if (useSilent) scheduleRelaunch(installerPid, Date.now());
       } catch (err) {
         installing = false;

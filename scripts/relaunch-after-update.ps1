@@ -1,16 +1,11 @@
 <#
 .SYNOPSIS
-  Brings ABxAG back after a silent update install.
+  Safety net that brings ABxAG back if the installer did not.
 
-  A silent (/S) install of the assisted NSIS installer skips the finish page,
-  and with it the launch of the freshly installed app — so the update applies
-  and the user is left staring at a closed program. This helper is registered
-  as a one-shot Windows scheduled task before ABxAG quits, waits for the
-  installer to finish, and starts the new build.
-
-  Being a scheduled task rather than a child process is the point: ABxAG is
-  about to exit, and Windows owns this process, so nothing can take it down on
-  the way out.
+  The primary mechanism is the installer's own --force-run flag, which is what
+  electron-updater uses. This helper is the backup: it runs a minute later,
+  waits for the installer to exit, and starts the new build ONLY if ABxAG is
+  not already running — so the two can coexist without a double launch.
 
   -InstallerPid <int>     the installer to wait for (0 = do not wait)
   -Exe <path>             the ABxAG executable to start
@@ -42,8 +37,12 @@ if ($InstallerPid -gt 0) {
   }
 }
 
-# A moment for the installer to finish writing and for the old lock to clear.
-Start-Sleep -Seconds 2
+# A moment for the installer to finish writing and for --force-run to start the
+# app. Only step in if it did not.
+Start-Sleep -Seconds 10
+if (Get-Process -Name ([System.IO.Path]::GetFileNameWithoutExtension($Exe)) -ErrorAction SilentlyContinue) {
+  exit 0
+}
 
 try {
   Start-Process -FilePath $Exe
