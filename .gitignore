@@ -36,3 +36,6 @@ __pycache__/
 builder-debug.yml
 
 
+
+# Leftover from an interrupted release build
+rel-out-*/
