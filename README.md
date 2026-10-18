@@ -69,6 +69,22 @@ npm run dev        # → http://localhost:3000
 npm run app        # desktop app (Electron + companion)
 ```
 
+**`abxag.local`** is the friendly name for ABxAG's loopback server
+(`http://abxag.local:3000` in dev, whatever port the installed app picked at
+runtime). It is a loopback name, so the API and the live socket treat it exactly
+like `127.0.0.1`.
+
+```powershell
+npm run setup:host          # add the hosts entry (asks for admin once)
+npm run setup:host:remove   # take it away again
+```
+
+`.local` is reserved for mDNS (RFC 6762) and Windows ships no mDNS responder, so
+the name is mapped in the hosts file instead. That covers Edge, curl, Node and
+PowerShell. **Chrome and Chromium ignore the hosts file for `.local`** and ask
+mDNS instead: use Edge, or start the browser with
+`--host-resolver-rules="MAP abxag.local 127.0.0.1"`.
+
 The first screen asks for your Gemini API key — stored encrypted with Windows
 DPAPI in your user-data folder, never in the project. Optional: copy
 `.env.example` to `.env` for dev settings (never put a real key in a file you share).
