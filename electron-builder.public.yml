@@ -37,6 +37,9 @@ extraResources:
   # companion/alarmWatchdog.ts as <resources>/fire-alarm.ps1.
   - from: scripts/fire-alarm.ps1
     to: fire-alarm.ps1
+  # Restarts the app after a silent update install.
+  - from: scripts/relaunch-after-update.ps1
+    to: relaunch-after-update.ps1
 
 win:
   icon: build/icon.ico

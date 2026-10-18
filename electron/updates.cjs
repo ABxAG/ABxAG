@@ -17,7 +17,8 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { spawn } = require('child_process');
+const { spawn, execFileSync } = require('child_process');
+const { resolveScriptPath } = require('./scriptPath.cjs');
 
 const RELEASES_URL = 'https://api.github.com/ABxAG/ABxAG/releases?per_page=20';
 // Same feed, mirrored on our own site: api.github.com is unreachable from
@@ -227,7 +228,7 @@ function cleanupStaleInstallers(tmpDir, keepNewest = true, log = () => {}) {
   return { removed, bytes };
 }
 
-function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = null, autoUpdater = null }) {
+function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = null, schtasksFn = null, autoUpdater = null }) {
   // Run once per app start: C: must not grow with every release.
   try {
     cleanupStaleInstallers(os.tmpdir(), undefined, log);
@@ -237,6 +238,7 @@ function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = nu
   const currentVersion = app.getVersion();
   const userAgent = `ABxAG-Updater/${currentVersion}`;
   const spawnInstaller = spawnFn || spawn;
+  const runSchtasks = schtasksFn || ((args) => execFileSync('schtasks.exe', args, { encoding: 'utf8', timeout: 30000 }));
   // Silent (/S) installs only make sense for the installed (NSIS) build.
   // Dev runs and the portable exe always use the interactive installer.
   let canSilentInstall = false;
@@ -422,6 +424,72 @@ function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = nu
     return snapshot();
   }
 
+  /**
+   * Guarantee ABxAG comes back after a SILENT install.
+   *
+   * The assisted NSIS installer launches the freshly installed app from its
+   * finish page — which a /S install never shows. So a silent update applied
+   * correctly and left the user with a closed program and no explanation. The
+   * launch is scheduled through the Windows Task Scheduler rather than a child
+   * process because ABxAG is about to quit: Windows owns that process, so it
+   * cannot be taken down with us.
+   *
+   * Interactive installs are left alone — their finish page already relaunches,
+   * and doing it twice would fight the single-instance lock.
+   */
+  function scheduleRelaunch(installerPid, nowMs) {
+    let exe = '';
+    try {
+      exe = String(typeof app.getPath === 'function' ? app.getPath('exe') || '' : '');
+    } catch {
+      exe = '';
+    }
+    if (!exe || !/abxag/i.test(exe)) return null;
+
+    const script = resolveScriptPathSafe('relaunch-after-update.ps1');
+    if (!script) {
+      log('[updates] relaunch-after-update.ps1 is missing; a silent install would not come back.');
+      return null;
+    }
+
+    const task = `ABxAG_Relaunch_${currentVersion.replace(/[^A-Za-z0-9]/g, '')}`;
+    const at = new Date(nowMs + 60_000);
+    const hhmm = `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
+    const action = [
+      'powershell.exe',
+      '-NoProfile',
+      '-NonInteractive',
+      '-WindowStyle',
+      'Hidden',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-File',
+      `"${script}"`,
+      '-InstallerPid',
+      String(installerPid || 0),
+      '-Exe',
+      `"${exe}"`,
+      '-Task',
+      task,
+    ].join(' ');
+    try {
+      runSchtasks(['/create', '/tn', task, '/tr', action, '/sc', 'once', '/st', hhmm, '/it', '/f']);
+      log(`[updates] relaunch scheduled as "${task}" at ${hhmm}.`);
+      return task;
+    } catch (err) {
+      log(`[updates] could not schedule the relaunch: ${err instanceof Error ? err.message : err}`);
+      return null;
+    }
+  }
+
+  function resolveScriptPathSafe(name) {
+    try {
+      return resolveScriptPath(name);
+    } catch {
+      return null;
+    }
+  }
+
   function installDownloaded(silent = false) {
     // Differential install: the update is already staged + hash-verified by
     // electron-updater — quit into it. Silent only for the installed build.
@@ -460,9 +528,13 @@ function createUpdater({ app, shell, BrowserWindow, log = () => {}, spawnFn = nu
     // naturally buy the same time for interactive installs).
     const quitDelayMs = useSilent ? 2500 : 800;
     setTimeout(() => {
+      let installerPid = 0;
       try {
         const child = spawnInstaller(installer, args, { detached: true, stdio: 'ignore', windowsHide: false });
+        installerPid = child && typeof child.pid === 'number' ? child.pid : 0;
         if (child && typeof child.unref === 'function') child.unref();
+        // Silent installs get no finish page, so nothing else would restart us.
+        if (useSilent) scheduleRelaunch(installerPid, Date.now());
       } catch (err) {
         installing = false;
         set({ status: 'error', error: `Could not launch the installer (${err instanceof Error ? err.message : err}).` });

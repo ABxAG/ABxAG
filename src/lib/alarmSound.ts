@@ -45,13 +45,23 @@ function audioContext(): AudioContext | null {
     if (!context) {
       const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!Ctor) return null;
-      context = new Ctor();
+      context = new Ctor({ latencyHint: "interactive" });
+      // An unavailable or exclusive-mode device raises an error event rather
+      // than throwing, and an unhandled one surfaces as a page error in the
+      // log. Absorb it: the shell beep is the guaranteed fallback.
+      context.addEventListener?.("error", () => {
+        playing = false;
+      });
     }
     // Autoplay policy: a window the user has interacted with resumes fine, but
     // an alarm can be the first sound after a cold start, so never throw.
     if (context.state === "suspended") void context.resume().catch(() => {});
+    // "suspended" after a resume request means the device would not open; the
+    // caller falls back to the shell beep.
+    if (context.state !== "running") return null;
     return context;
   } catch {
+    context = null;
     return null;
   }
 }
@@ -111,6 +121,10 @@ export function startAlarmSound(label = "alarm", options?: { speak?: boolean; re
     playing = true;
     sounded = true;
   }
+
+  // No usable WebAudio device? Then the shell beep is the alarm, so the ring is
+  // still heard rather than silently staying visual.
+  if (!sounded) raiseShellForAlarm();
 
   if (speak) speakLabel(label);
   return sounded;

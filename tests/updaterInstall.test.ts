@@ -62,7 +62,7 @@ function makeFakeAu(behavior: "ok" | "error", calls: { quitAndInstall: Array<[bo
   };
 }
 
-function makeUpdater(opts: { packaged: boolean; exePath: string; spawnCalls: Array<{ file: string; args: string[] }>; quit: { called: boolean }; autoUpdater?: unknown }) {
+function makeUpdater(opts: { packaged: boolean; exePath: string; spawnCalls: Array<{ file: string; args: string[] }>; quit: { called: boolean }; autoUpdater?: unknown; schtasksCalls?: string[][] }) {
   return createUpdater({
     autoUpdater: opts.autoUpdater ?? null,
     app: {
@@ -76,7 +76,11 @@ function makeUpdater(opts: { packaged: boolean; exePath: string; spawnCalls: Arr
     log: () => {},
     spawnFn: (file: string, args: string[]) => {
       opts.spawnCalls.push({ file, args });
-      return { unref: () => {} };
+      return { unref: () => {}, pid: 4242 };
+    },
+    schtasksFn: (args: string[]) => {
+      if (opts.schtasksCalls) opts.schtasksCalls.push(args);
+      return "SUCCESS";
     },
   });
 }
@@ -94,6 +98,74 @@ test("silent auto-install passes /S and quits", async () => {
     assert.equal(spawnCalls.length, 1);
     assert.deepEqual(spawnCalls[0].args, ["/S"]);
     assert.equal(spawnCalls[0].file, installer);
+    assert.equal(quit.called, true);
+  } finally {
+    fs.rmSync(installer, { force: true });
+  }
+});
+
+// A /S install skips the installer's finish page, which is the only thing that
+// launches the freshly installed app. Without a relaunch of our own the update
+// applies and the user is left with a closed program — the reported bug.
+test("a silent install schedules a relaunch, because /S shows no finish page", async () => {
+  const spawnCalls: Array<{ file: string; args: string[] }> = [];
+  const schtasksCalls: string[][] = [];
+  const quit = { called: false };
+  const u = makeUpdater({
+    packaged: true, exePath: "C:\\APPs\\ABxAG\\ABxAG.exe", spawnCalls, quit, schtasksCalls,
+  });
+  const installer = makeTmpInstaller();
+  try {
+    u._setTestState({ status: "downloaded", downloadedVersion: "9.9.9", downloadedFile: installer });
+    u.installDownloaded(true);
+    await sleep(3000);
+
+    assert.equal(schtasksCalls.length, 1, "exactly one relaunch task");
+    const args = schtasksCalls[0];
+    assert.equal(args[0], "/create");
+    const action = args[args.indexOf("/tr") + 1];
+    assert.ok(action.includes("relaunch-after-update.ps1"), "runs the shipped helper");
+    assert.ok(action.includes("C:\\APPs\\ABxAG\\ABxAG.exe"), "starts the installed app");
+    assert.ok(args[args.indexOf("/tr") + 1].includes("-InstallerPid 4242"), "waits for the installer to finish");
+    assert.ok(args.includes("/it"), "runs in this user's session, so the app really starts");
+  } finally {
+    fs.rmSync(installer, { force: true });
+  }
+});
+
+test("an interactive install is left alone: its finish page already relaunches", async () => {
+  const spawnCalls: Array<{ file: string; args: string[] }> = [];
+  const schtasksCalls: string[][] = [];
+  const quit = { called: false };
+  const u = makeUpdater({
+    packaged: true, exePath: "C:\\APPs\\ABxAG\\ABxAG.exe", spawnCalls, quit, schtasksCalls,
+  });
+  const installer = makeTmpInstaller();
+  try {
+    u._setTestState({ status: "downloaded", downloadedVersion: "9.9.9", downloadedFile: installer });
+    u.installDownloaded(false);
+    await sleep(1200);
+    assert.deepEqual(spawnCalls[0].args, []);
+    assert.equal(schtasksCalls.length, 0, "no double launch against the single-instance lock");
+    assert.equal(quit.called, true);
+  } finally {
+    fs.rmSync(installer, { force: true });
+  }
+});
+
+test("a portable build cannot relaunch itself and says so instead of failing silently", async () => {
+  const spawnCalls: Array<{ file: string; args: string[] }> = [];
+  const schtasksCalls: string[][] = [];
+  const quit = { called: false };
+  const u = makeUpdater({
+    packaged: true, exePath: "C:\\Apps\\ABxAG-Portable\\ABxAG.exe", spawnCalls, quit, schtasksCalls,
+  });
+  const installer = makeTmpInstaller();
+  try {
+    u._setTestState({ status: "downloaded", downloadedVersion: "9.9.9", downloadedFile: installer });
+    u.installDownloaded(false);
+    await sleep(1200);
+    assert.equal(schtasksCalls.length, 0, "no bogus task for a portable build");
     assert.equal(quit.called, true);
   } finally {
     fs.rmSync(installer, { force: true });

@@ -916,11 +916,21 @@ function startShell() {
   // window, so a reminder is heard even when ABxAG sits in the tray.
   ipcMain.removeAllListeners('alarm:raise');
   ipcMain.on('alarm:raise', () => {
-    try {
-      shell.beep();
-    } catch {
-      /* no audio device */
-    }
+    // Three beeps: a single one is easy to miss, and this is the channel that
+    // still works when the renderer has no usable audio device at all.
+    const beepOnce = (remaining) => {
+      if (remaining <= 0) return;
+      try {
+        shell.beep();
+      } catch {
+        return; // no audio device at all
+      }
+      if (remaining > 1) {
+        const timer = setTimeout(() => beepOnce(remaining - 1), 450);
+        if (typeof timer.unref === 'function') timer.unref();
+      }
+    };
+    beepOnce(3);
     if (mainWindow && (!mainWindow.isVisible() || mainWindow.isMinimized() || !mainWindow.isFocused())) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.show();
