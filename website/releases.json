@@ -7,22 +7,22 @@
     "assets": [
       {
         "name": "ABxAG-Setup-1.1.24.exe",
-        "size": 0,
+        "size": 130077770,
         "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.24/ABxAG-Setup-1.1.24.exe"
       },
       {
         "name": "ABxAG-Portable-1.1.24.exe",
-        "size": 0,
+        "size": 127318148,
         "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.24/ABxAG-Portable-1.1.24.exe"
       },
       {
         "name": "ABxAG-Setup-1.1.24.exe.blockmap",
-        "size": 0,
+        "size": 134561,
         "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.24/ABxAG-Setup-1.1.24.exe.blockmap"
       },
       {
         "name": "latest.yml",
-        "size": 0,
+        "size": 342,
         "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.24/latest.yml"
       }
     ]
