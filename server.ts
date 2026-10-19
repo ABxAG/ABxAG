@@ -44,7 +44,6 @@ import {
 import { ABxAGRuntime } from "./runtime/ABxAGRuntime";
 import { setConsolidationGenerator } from "./server_memory";
 import { assertSafeExternalUrl } from "./shared/netSafety";
-import { isLocalHostHeader, isLocalOrigin, localBaseUrl, LOCAL_HOSTNAME } from "./shared/localHost";
 import * as nativeWin32 from "./native/win32";
 import { LIVE_AGENT_TOOL_DECLARATIONS, LIVE_AGENT_INSTRUCTIONS, LIVE_AGENT_TOOL_NAMES, handleLiveAgentTool } from "./voice/liveAgentTools";
 
@@ -731,8 +730,8 @@ async function startServer() {
   app.use((req, res, next) => {
     const host = String(req.headers.host || "");
     const origin = String(req.headers.origin || "");
-    const localHost = isLocalHostHeader(host);
-    const localOrigin = isLocalOrigin(origin) || origin === "null";
+    const localHost = /^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(host);
+    const localOrigin = !origin || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin) || origin === "null";
     if (!localHost || !localOrigin) return res.status(403).json({ error: "ABxAG only accepts local requests." });
     next();
   });
@@ -1755,8 +1754,8 @@ async function startServer() {
     // user's browser must never be able to listen in or drive the session.
     const origin = String(request.headers.origin || "");
     const host = String(request.headers.host || "");
-    const localOrigin = isLocalOrigin(origin);
-    if (!localOrigin || !isLocalHostHeader(host)) {
+    const localOrigin = !origin || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+    if (!localOrigin || !/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(host)) {
       socket.destroy();
       return;
     }
@@ -3409,11 +3408,8 @@ async function startServer() {
   }
 
   server.listen(PORT, "127.0.0.1", () => {
-    // The loopback address is what we bind (the alias resolves to it), and the
-    // friendly name is what a human should type or bookmark.
-    const friendly = localBaseUrl(PORT);
-    logStartup(`ABxAG server started on ${friendly} (also http://127.0.0.1:${PORT})`);
-    console.log(`[Server] ${friendly} - http://127.0.0.1:${PORT}`);
+    logStartup(`ABxAG V2 server started on http://localhost:${PORT}`);
+    console.log(`[Server] Running on http://localhost:${PORT}`);
     // Kick off the desktop agent (probe + auto-spawn) immediately on boot.
     ensureDesktopAgent()
       .then(async () => {
