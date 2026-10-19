@@ -27,7 +27,7 @@
     "dist:linux": "npm run build && electron-builder --config electron-builder.linux.yml --linux AppImage -p never",
     "build:launcher": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-launcher.ps1",
     "test:characters": "node --import tsx --test tests/characters.test.ts",
-    "test:agent": "node --import tsx --test tests/core.test.ts tests/models.test.ts tests/agentLoop.test.ts tests/presence.test.ts tests/chatOpen.test.ts tests/taskResultText.test.ts tests/updaterInstall.test.ts tests/characterVoice.test.ts tests/stageCommand.test.ts tests/outfitTint.test.ts tests/companionCommands.test.ts tests/commandPalette.test.ts tests/cyberpunk.test.ts tests/overlaySettings.test.ts tests/hudHologram.test.ts tests/alarms.test.ts tests/alarmWatchdog.test.ts",
+    "test:agent": "node --import tsx --test tests/core.test.ts tests/models.test.ts tests/agentLoop.test.ts tests/presence.test.ts tests/chatOpen.test.ts tests/taskResultText.test.ts tests/updaterInstall.test.ts tests/characterVoice.test.ts tests/stageCommand.test.ts tests/outfitTint.test.ts tests/companionCommands.test.ts tests/commandPalette.test.ts tests/cyberpunk.test.ts tests/overlaySettings.test.ts tests/hudHologram.test.ts tests/alarms.test.ts tests/alarmWatchdog.test.ts tests/agentBundle.test.ts",
     "test": "npm run lint && npm run test:agent && npm run test:characters && npm run test:python",
     "import:character": "tsx tools/import-character.ts"
   },
