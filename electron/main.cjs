@@ -27,23 +27,15 @@ const fs = require('fs');
 const net = require('net');
 
 // --- Constants -------------------------------------------------------------
-// The installed app serves on 369 and answers to the local name `abxag`, so
-// the address a human types is http://abxag:369 - memorable, and the same on
-// every machine. Development keeps 3000. If the port is taken anyway, the next
-// free one is used (see choosePort) and the name follows it.
-const { LOCAL_HOSTNAME, LOCAL_PORT } = require('./localEndpoint.cjs');
-const PREFERRED_PORT = Number(process.env.ABxAG_PORT) || (app.isPackaged ? LOCAL_PORT : 3000);
+// The installed app uses its own uncommon port: 3000 is what Vite, Next,
+// Remotion Studio etc. use, and with one of those running ABxAG's window
+// opened *their* page. Development keeps 3000. If the port is taken anyway,
+// the next free one is used (see choosePort).
+const PREFERRED_PORT = Number(process.env.ABxAG_PORT) || (app.isPackaged ? 47130 : 3000);
 let SERVER_PORT = PREFERRED_PORT;
-// Prefer the friendly name so the window, the tray links and anything the app
-// prints all say `abxag:PORT`. It only works if the hosts entry exists, so a
-// machine without it falls back to the address that always works: 127.0.0.1
-// (never "localhost", which can resolve to ::1 where another app answers).
-function originFor(port) {
-  return hostNameResolves(LOCAL_HOSTNAME)
-    ? `http://${LOCAL_HOSTNAME}:${port}`
-    : `http://127.0.0.1:${port}`;
-}
-let SERVER_ORIGIN = originFor(SERVER_PORT);
+// 127.0.0.1, not "localhost": the server listens on IPv4 loopback only, and
+// "localhost" can resolve to ::1, where another app on the same port answers.
+let SERVER_ORIGIN = `http://127.0.0.1:${SERVER_PORT}`;
 
 /** Can we listen on 127.0.0.1:port? */
 function portFree(port) {
@@ -126,10 +118,40 @@ const updater = createUpdater({
 // Single-instance guard — second launches focus the existing window instead of
 // starting a second backend on the same port.
 // ---------------------------------------------------------------------------
-const gotSingleInstanceLock = app.requestSingleInstanceLock();
-if (!gotSingleInstanceLock) {
-  app.quit();
-} else {
+/**
+ * Wait for the single-instance lock instead of quitting on the first refusal.
+ *
+ * After an update, the installer starts the new build while the old process is
+ * often still shutting down. The lock is still held in that window, so an
+ * immediate `app.quit()` killed the freshly installed app — it looked exactly
+ * like the update not launching. Retrying for a few seconds separates the two
+ * real cases: a genuine second launch quits and surfaces the running window,
+ * while a relaunch gets its turn a moment later.
+ */
+const LOCK_RETRY_MS = 30000;
+const LOCK_RETRY_INTERVAL_MS = 400;
+
+function acquireSingleInstanceLock() {
+  if (app.requestSingleInstanceLock()) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const deadline = Date.now() + LOCK_RETRY_MS;
+    const timer = setInterval(() => {
+      if (app.requestSingleInstanceLock()) {
+        clearInterval(timer);
+        resolve(true);
+      } else if (Date.now() >= deadline) {
+        clearInterval(timer);
+        resolve(false);
+      }
+    }, LOCK_RETRY_INTERVAL_MS);
+  });
+}
+
+acquireSingleInstanceLock().then((gotLock) => {
+  if (!gotLock) {
+    app.quit();
+    return;
+  }
   app.on('second-instance', () => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
@@ -138,7 +160,7 @@ if (!gotSingleInstanceLock) {
     }
   });
   app.whenReady().then(bootstrap);
-}
+});
 
 // ---------------------------------------------------------------------------
 // Backend lifecycle
@@ -1013,7 +1035,7 @@ async function bootstrap() {
 
   try {
     SERVER_PORT = await choosePort();
-    SERVER_ORIGIN = originFor(SERVER_PORT);
+    SERVER_ORIGIN = `http://127.0.0.1:${SERVER_PORT}`;
     startBackend();
     await waitForBackend(SERVER_READY_TIMEOUT_MS);
     createMainWindow();

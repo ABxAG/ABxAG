@@ -37,5 +37,5 @@ builder-debug.yml
 
 
 
-# Leftover from an interrupted release build
+# One-off release output, used when release-public is locked
 rel-out-*/

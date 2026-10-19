@@ -1,13 +1,14 @@
 /**
- * Does ABxAG actually come back after a silent update?
+ * Does the installer actually bring ABxAG back?
  *
- * A silent (/S) install of the assisted NSIS installer never shows its finish
- * page, so nothing launches the freshly installed app. This registers the same
- * relaunch task the updater does, points it at a stand-in "installer" process,
- * and checks the app process is started once that process exits.
+ * The bug being pinned down is the one users see: the update applies and then
+ * nothing is running. The flag that decides it is on the installer command
+ * line, so this runs the real NSIS installer into a throwaway directory and
+ * checks what happens.
  *
- * Uses a stand-in rather than the real installer on purpose: installing over a
- * real ABxAG would replace the user's app mid-test.
+ * ABxAG is installed to a temp folder with /D=, never over the real one, and
+ * the run is observable in two independent ways: whether a process appears, and
+ * whether the NSIS task's own result records it.
  *
  *   node scripts/relaunch-probe.cjs
  */
@@ -16,61 +17,78 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 
-const TASK = "ABxAG_Relaunch_Probe";
-const SCRIPT = path.join(process.cwd(), "scripts", "relaunch-after-update.ps1");
-// Stands in for the app the helper should start; it writes a marker and exits,
-// so the probe observes the launch without opening a real window.
-const STUB = path.join(os.tmpdir(), "abxag-relaunch-stub.bat");
-const MARKER = path.join(os.tmpdir(), "abxag-relaunch-marker.txt");
-
-const schtasks = (args) => execFileSync("schtasks.exe", args, { encoding: "utf8", timeout: 60_000 });
+const INSTALLER = process.argv[2] || path.join("release-public", "ABxAG-Setup-1.1.25.exe");
+const TARGET = path.join(os.tmpdir(), "abxag-relaunch-probe");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-try { fs.unlinkSync(MARKER); } catch {}
-fs.writeFileSync(STUB, `@echo off\r\necho relaunched > "${MARKER}"\r\n`, "ascii");
-try { schtasks(["/delete", "/tn", TASK, "/f"]); } catch { /* not there */ }
-
-// A stand-in "installer": stays alive until we let it go.
-const installer = spawn(process.execPath, ["-e", "setTimeout(() => {}, 60000)"], { stdio: "ignore" });
-
-const at = new Date(Date.now() + 60_000);
-const hhmm = `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
-const action = `powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "${SCRIPT}" -InstallerPid ${installer.pid} -Exe "${STUB}" -Task ${TASK}`;
+/** Is any ABxAG process running that was NOT already running before we started? */
+function abxagProcesses(exclude) {
+  const out = execFileSync("tasklist", ["/FI", "IMAGENAME eq ABxAG.exe", "/NH"], { encoding: "utf8", timeout: 30_000 });
+  return out
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("ABxAG.exe"))
+    .map((line) => Number(line.split(/\s+/)[1]))
+    .filter((pid) => Number.isFinite(pid) && pid !== exclude);
+}
 
 (async () => {
-  schtasks(["/create", "/tn", TASK, "/tr", action, "/sc", "once", "/st", hhmm, "/it", "/f"]);
-  console.log("relaunch task registered for", hhmm, "| watching the stand-in installer pid", installer.pid);
+  if (!fs.existsSync(INSTALLER)) throw new Error(`installer not found: ${INSTALLER}`);
+  fs.rmSync(TARGET, { recursive: true, force: true });
 
-  // Let the helper find the installer still running, then release it.
-  await sleep(20_000);
-  console.log("stand-in installer still alive:", installer.exitCode === null);
-  installer.kill("SIGKILL");
-  console.log("installer finished; the helper should now start the app");
+  const before = abxagProcesses();
+  console.log("ABxAG processes before:", before.length ? before.join(", ") : "none");
 
-  for (let i = 0; i < 30; i++) {
-    await sleep(5_000);
-    if (fs.existsSync(MARKER)) {
-      console.log(`\nrelaunched after ~${20 + (i + 1) * 5}s ->`, fs.readFileSync(MARKER, "utf8").trim());
-      console.log("PASS - the app is started again after the installer finishes.");
-      return;
-    }
-  }
-  console.log("\nFAIL - the app was never started");
-  try {
-    const q = schtasks(["/query", "/tn", TASK, "/fo", "LIST", "/v"]);
-    console.log(q.split(/\r?\n/).filter((l) => /Last Run Time|Last Result|Next Run Time|Status|Task To Run/.test(l)).join("\n"));
-  } catch (err) {
-    console.log("task query failed:", err.message);
-  }
-  process.exitCode = 1;
-})()
-  .catch((err) => {
-    console.error("\nFAIL -", err.message);
-    process.exitCode = 1;
-  })
-  .finally(() => {
-    try { schtasks(["/delete", "/tn", TASK, "/f"]); } catch { /* gone */ }
-    try { fs.rmSync(MARKER, { force: true }); } catch { /* gone */ }
-    try { fs.rmSync(STUB, { force: true }); } catch { /* gone */ }
-    if (installer.exitCode === null) installer.kill("SIGKILL");
+  // /S for a silent install, --force-run for the relaunch, /D= to keep the
+  // real installation untouched.
+  console.log(`running: ${INSTALLER} /S --force-run /D=${TARGET}`);
+  const installer = spawn(INSTALLER, ["/S", "--force-run", `/D=${TARGET}`], {
+    stdio: "ignore",
+    detached: false,
   });
+  installer.on("error", (e) => console.log("could not launch installer:", e.message));
+
+  let started = null;
+  const deadline = Date.now() + 180_000;
+  while (Date.now() < deadline) {
+    await sleep(3_000);
+    const after = abxagProcesses();
+    const fresh = after.filter((pid) => !before.includes(pid));
+    if (fresh.length) {
+      started = fresh;
+      break;
+    }
+    if (installer.exitCode !== null) console.log("installer exited with", installer.exitCode);
+  }
+
+  const installed = fs.existsSync(path.join(TARGET, "ABxAG.exe"));
+  console.log("files installed:", installed);
+  console.log("ABxAG started by the installer:", started ? `yes (pid ${started.join(", ")})` : "no");
+
+  if (started) {
+    // Leave nothing running: this is a probe, not a session.
+    for (const pid of started) {
+      try { execFileSync("taskkill", ["/pid", String(pid), "/t", "/f"], { timeout: 30_000 }); } catch { /* gone */ }
+    }
+    // Windows keeps the freshly installed files locked for a moment after the
+    // process dies; deleting before that throws EPERM and hides the real result.
+    for (let i = 0; i < 20; i++) {
+      if (!abxagProcesses().some((pid) => started.includes(pid))) break;
+      await sleep(1_000);
+    }
+    await sleep(2_000);
+  }
+
+  try {
+    fs.rmSync(TARGET, { recursive: true, force: true });
+  } catch (err) {
+    // Not a failure of the thing being probed; say so rather than throwing.
+    console.log(`note: could not remove ${TARGET} (${err.code || err.message}) - it is a temp folder`);
+  }
+  if (!installed) throw new Error("the installer did not install anything");
+  if (!started) throw new Error("the installer finished but ABxAG was never started");
+  console.log("\nPASS - a silent install starts the app by itself.");
+})().catch((err) => {
+  console.error("\nFAIL -", err.message);
+  process.exit(1);
+});

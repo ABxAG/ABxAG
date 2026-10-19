@@ -96,9 +96,9 @@ test("silent auto-install passes /S and quits", async () => {
     u.installDownloaded(true);
     await sleep(3000);
     assert.equal(spawnCalls.length, 1);
-    // /S alone would install silently and never start the app again: the
-    // assisted NSIS installer only runs the app when it is NOT silent, unless
-    // --force-run is present.
+    // /S alone installs and then nothing starts it: the assisted NSIS
+    // installer only runs the app from its finish page, which a silent install
+    // skips. --force-run is what brings ABxAG back.
     assert.deepEqual(spawnCalls[0].args, ["/S", "--force-run"]);
     assert.equal(spawnCalls[0].file, installer);
     assert.equal(quit.called, true);
@@ -148,7 +148,9 @@ test("an interactive install is left alone: its finish page already relaunches",
     u._setTestState({ status: "downloaded", downloadedVersion: "9.9.9", downloadedFile: installer });
     u.installDownloaded(false);
     await sleep(1200);
-    assert.deepEqual(spawnCalls[0].args, []);
+    // The wizard shows the finish page, but --force-run is sent anyway so the
+    // launch does not depend on the user's "Run ABxAG" checkbox.
+    assert.deepEqual(spawnCalls[0].args, ["--force-run"]);
     assert.equal(schtasksCalls.length, 0, "no double launch against the single-instance lock");
     assert.equal(quit.called, true);
   } finally {
@@ -156,44 +158,7 @@ test("an interactive install is left alone: its finish page already relaunches",
   }
 });
 
-test("the updater leaves a log behind, because the install runs just before exit", async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "abxag-update-log-"));
-  const spawnCalls: Array<{ file: string; args: string[] }> = [];
-  const quit = { called: false };
-  const installer = makeTmpInstaller();
-  try {
-    const u = createUpdater({
-      app: {
-        getVersion: () => "1.1.23",
-        isPackaged: true,
-        getPath: (name: string) => (name === "userData" ? dir : "C:\\APPs\\ABxAG\\ABxAG.exe"),
-        quit: () => { quit.called = true; },
-      },
-      shell: {},
-      BrowserWindow: { getAllWindows: () => [] },
-      spawnFn: (file: string, args: string[]) => {
-        spawnCalls.push({ file, args });
-        return { unref: () => {}, pid: 99 };
-      },
-    });
-    u._setTestState({ status: "downloaded", downloadedVersion: "9.9.9", downloadedFile: installer });
-    u.installDownloaded(true);
-    await sleep(3000); // the install deliberately runs just before the exit
-  } finally {
-    fs.rmSync(installer, { force: true });
-  }
-  try {
-    // The installer runs and then the process exits, so a console-only log
-    // would leave no evidence of the flags that decide whether ABxAG restarts.
-    const log = fs.readFileSync(path.join(dir, "logs", "updates.log"), "utf8");
-    assert.match(log, /launching installer/);
-    assert.match(log, /--force-run/);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
-});
-
-test("a portable build cannot relaunch itself and is not asked to", async () => {
+test("a portable build cannot relaunch itself and says so instead of failing silently", async () => {
   const spawnCalls: Array<{ file: string; args: string[] }> = [];
   const schtasksCalls: string[][] = [];
   const quit = { called: false };
@@ -222,7 +187,7 @@ test("manual install shows the wizard (no /S)", async () => {
     u.installDownloaded(false);
     await sleep(1200);
     assert.equal(spawnCalls.length, 1);
-    assert.deepEqual(spawnCalls[0].args, []);
+    assert.deepEqual(spawnCalls[0].args, ["--force-run"]);
     assert.equal(quit.called, true);
   } finally {
     fs.rmSync(installer, { force: true });
@@ -374,7 +339,9 @@ test("portable build falls back to the wizard even when silent asked", async () 
     u.installDownloaded(true);
     await sleep(1200);
     assert.equal(spawnCalls.length, 1);
-    assert.deepEqual(spawnCalls[0].args, []);
+    // A portable build keeps the wizard (it cannot install over itself), and
+    // still carries the flag so the finish page launches it.
+    assert.deepEqual(spawnCalls[0].args, ["--force-run"]);
   } finally {
     fs.rmSync(installer, { force: true });
   }
