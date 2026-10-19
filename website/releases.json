@@ -3,7 +3,7 @@
     "tag": "v1.1.26",
     "date": "2026-10-19T07:31:54Z",
     "title": null,
-    "notes": "## ABxAG v1.1.26\n\n### Fixed\n\n- **Failed",
+    "notes": "## ABxAG v1.1.26\n\n### Fixed\n\n- **\"Failed to start embedded python interpreter!\" is gone.** The frozen PC-control agent ships as an onedir bundle: \u0007bxag.exe plus an _internal folder with the embedded Python runtime and \base_library.zip (every pure-Python package). An interrupted update had copied only part of it — the exe and five binaries, no \base_library.zip — so the embedded interpreter could never start and the PyInstaller bootloader showed that dead-end dialog on every launch.\n\n- **The bundle is now checked before anything launches.** The app verifies \base_library.zip, the embedded Python DLL and a sane file count. A broken bundle is reported by name and falls back to running the agent from source with a local Python, so PC control keeps working instead of dying with a message you cannot act on. Reinstalling repairs the bundle itself.\n\n- **One bounded retry.** If the frozen agent's first launch loses the race for its port, it is started again a moment later rather than leaving desktop control offline with no explanation.\n\n### Verified\n\n- tsc clean - 129 agent tests (8 new), 8 character, 32 Python\n- The exact bundle that caused this is asserted in tests, byte for byte, alongside the cases the check must not get wrong\n- The packaged bundle was checked after building: 699 files, \base_library.zip present, and the new check reports it intact\n\n- Public build: no bundled character models, users import their own on first run",
     "assets": [
       {
         "name": "ABxAG-Setup-1.1.26.exe",
