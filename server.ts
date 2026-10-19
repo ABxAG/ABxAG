@@ -2,6 +2,7 @@ import express from "express";
 import http from "http";
 import path from "path";
 import { WebSocketServer } from "ws";
+import { missingBundleParts } from "./agent/bundleIntegrity";
 import { GoogleGenAI, Modality, Type, LiveServerMessage } from "@google/genai";
 import dotenv from "dotenv";
 import * as fs from "fs";
@@ -272,6 +273,37 @@ async function captureViaElectron(
 let cachedPythonRuntime: string | null | undefined;
 
 /**
+ * Give the frozen agent a second chance.
+ *
+ * The first launch can lose a race with the old process still holding the port
+ * or the machine still busy, and the user then sees desktop control offline
+ * with no obvious cause. One bounded retry after a short wait is enough to
+ * absorb that; repeated failures are left to surface through the health probe.
+ */
+function scheduleFrozenAgentRetry(exe: string, env: NodeJS.ProcessEnv): void {
+  setTimeout(() => {
+    void isDesktopAgentAlive().then((alive) => {
+      if (alive) return;
+      console.warn("[Desktop Agent] Frozen agent did not answer; retrying once.");
+      logError("AGENT_SPAWN_RETRY: first launch did not become healthy");
+      try {
+        const child = spawn(exe, [], {
+          cwd: path.dirname(exe),
+          detached: true,
+          stdio: "ignore",
+          windowsHide: true,
+          env,
+        });
+        child.unref();
+        logStartup(`AGENT_SPAWN retry pid=${child.pid}`);
+      } catch (e: any) {
+        logError(`AGENT_SPAWN_RETRY_FAILED: ${e?.message || e}`);
+      }
+    });
+  }, 15_000);
+}
+
+/**
  * Pick a Python interpreter for the desktop agent. An interpreter that can
  * import the agent's dependencies wins over one that merely runs: a bare
  * Python without pywinauto silently disables UI Automation.
@@ -336,7 +368,15 @@ function spawnDesktopAgent(): void {
   const frozenExe = frozenCandidates.find(
     (candidate): candidate is string => Boolean(candidate && fs.existsSync(candidate)),
   );
-  if (frozenExe) {
+  // A PyInstaller onedir bundle is hundreds of files: the embedded Python DLL,
+  // base_library.zip with every pure-Python package, and the compiled
+  // extensions. An interrupted update can leave a tree with the exe and a
+  // handful of binaries but none of that, and the bootloader then dies with
+  // "Failed to start embedded python interpreter!" — a dialog that tells the
+  // user nothing about the actual problem. Check before launching so a broken
+  // bundle falls back instead of taking the app down with it.
+  const bundleProblem = frozenExe ? missingBundleParts(frozenExe) : null;
+  if (frozenExe && !bundleProblem) {
     try {
       const child = spawn(frozenExe, [], {
         cwd: path.dirname(frozenExe),
@@ -348,11 +388,19 @@ function spawnDesktopAgent(): void {
       child.unref();
       logStartup(`AGENT_SPAWN frozen exe pid=${child.pid} path=${frozenExe}`);
       console.log(`[Desktop Agent] Launched frozen agent (PID ${child.pid}).`);
+      scheduleFrozenAgentRetry(frozenExe, agentEnv);
       return;
     } catch (e: any) {
       logError(`AGENT_SPAWN_FROZEN_FAILED: ${e?.message || e}`);
       // fall through to the Python path below
     }
+  }
+  if (frozenExe && bundleProblem) {
+    logError(
+      `AGENT_SPAWN_INCOMPLETE_BUNDLE: ${bundleProblem}. The frozen agent will not be used; ` +
+        "desktop control falls back to running from source. Reinstall ABxAG to repair the bundle.",
+    );
+    console.warn(`[Desktop Agent] ${bundleProblem} — falling back to the Python source agent.`);
   }
 
   // Development fallback: run the agent from source using a local Python.
