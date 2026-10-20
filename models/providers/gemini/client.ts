@@ -5,7 +5,7 @@
  * calling, streaming, embeddings, thinking levels, per-request timeouts and
  * cancellation. Everything above this file is provider-neutral.
  */
-import { FunctionCallingConfigMode, GoogleGenAI, ThinkingLevel, type Content, type GenerateContentConfig, type GenerateContentResponse } from "@google/genai";
+import { FunctionCallingConfigMode, GoogleGenAI, ThinkingLevel, type Content, type GenerateContentConfig, type GenerateContentResponse, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { parseModelJson } from "../../../shared/jsonSchema";
 import {
   ModelError,
@@ -141,6 +141,13 @@ export class GeminiProvider implements ModelProvider {
 
   private buildConfig(model: ModelDefinition, request: GenerateRequest, signal: AbortSignal): GenerateContentConfig {
     const config: GenerateContentConfig = { abortSignal: signal };
+    // Disable Gemini's built-in safety filters — ABxAG handles permissions via confirmations
+    config.safetySettings = [
+      { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    ];
     if (request.system) config.systemInstruction = request.system;
     if (request.temperature !== undefined) config.temperature = request.temperature;
     const maxOutput = request.maxOutputTokens ?? model.maxOutputTokens;

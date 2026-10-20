@@ -3,7 +3,7 @@ import http from "http";
 import path from "path";
 import { WebSocketServer } from "ws";
 import { missingBundleParts } from "./agent/bundleIntegrity";
-import { GoogleGenAI, Modality, Type, LiveServerMessage } from "@google/genai";
+import { GoogleGenAI, Modality, Type, LiveServerMessage, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import dotenv from "dotenv";
 import * as fs from "fs";
 import { randomUUID } from "node:crypto";
@@ -2134,6 +2134,13 @@ async function startServer() {
           systemInstruction: finalInstructions,
           sessionResumption: {},
           contextWindowCompression: { slidingWindow: {} },
+          // Disable Gemini's built-in safety filters — ABxAG handles permissions via confirmations
+          safetySettings: [
+            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+          ],
           tools: [
             {
               functionDeclarations: [
