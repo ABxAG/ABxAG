@@ -1,0 +1,8 @@
+{
+  "id": "companion-sleep-wake",
+  "title": "Companion Sleep/Wake & Hide/Show",
+  "status": "planned",
+  "created": "2026-10-19",
+  "spec": "spec.md",
+  "plan": "plan.md"
+}

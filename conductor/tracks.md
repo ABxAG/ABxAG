@@ -10,3 +10,5 @@
 - [lightfast](./tracks/lightfast/index.md) — Lightweight & fast: prune installer weight, keep boot fast
 - [settings-system-update](./tracks/settings-system-update/index.md) - Settings: updater UI moved to System > Update (move-only)
 - [alarm-ring](./tracks/alarm-ring/index.md) - Alarm & reminder ring: doll grows + waves, ring card, Settings list
+- [companion-sleep-wake](./tracks/companion-sleep-wake/index.md) — Companion sleep/wake cycle & window hide/show
+- [companion-resize](./tracks/companion-resize/index.md) — Companion resize via voice/text (bigger/smaller/reset)

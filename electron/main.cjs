@@ -860,7 +860,11 @@ function updateTrayMenu() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Open ABxAG', click: openMainWindow },
     { label: companionOn ? 'Hide desktop companion' : 'Show desktop companion', click: () => saveShellSettings({ companion: { enabled: !companionOn } }) },
-    ...(companionOn ? [{ label: 'Call her here', click: () => companion?.summon() }] : []),
+    ...(companionOn ? [
+      { label: companion?.sleeping ? 'Wake companion' : 'Sleep companion', click: () => companion?.handleCommand(companion.sleeping ? 'wake' : 'sleep') },
+      { label: companion?.windowHidden ? 'Show companion window' : 'Hide companion window', click: () => companion?.handleCommand(companion.windowHidden ? 'show_window' : 'hide_window') },
+      { label: 'Call her here', click: () => companion?.summon() }
+    ] : []),
     ...(companion?.hasMovedIcons ? [{ label: 'Put the desktop icons back', click: () => void companion?.restoreIcons() }] : []),
     { label: 'Character Studio…', click: openStudio },
     { type: 'separator' },

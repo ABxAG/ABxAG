@@ -68,6 +68,10 @@ class CompanionManager {
     this.hiddenForFullscreen = false;
     this.hiddenSide = null;
     this.alarmHold = false; // true while the alarm-moment owns the window bounds
+    // Companion sleep/wake & hide/show state
+    this._sleeping = false;
+    this._windowHidden = false;
+    this.preSleepMode = null; // mode before sleep/window_hidden, for restoration
     this.timers = new Set();
     this.cursorTimer = null;
     this.physicsTimer = null;
@@ -147,6 +151,14 @@ class CompanionManager {
 
   get level() {
     return this.settings?.companion?.interactionLevel || 'normal';
+  }
+
+  get sleeping() {
+    return this._sleeping;
+  }
+
+  get windowHidden() {
+    return this._windowHidden;
   }
 
   size() {
@@ -599,6 +611,43 @@ class CompanionManager {
 
   beginDrag() {
     if (!this.win) return;
+    // Wake up if sleeping when dragged
+    if (this.sleeping) {
+      void this.wake();
+      // Wait a bit for wake to complete before continuing drag
+      this.sleep(300).then(() => {
+        this.interrupt();
+        this.hanging = false;
+        if (this.lying) {
+          // Picked up from lying: upright window shape under the cursor at once,
+          // kept invisible until the renderer has re-posed and re-framed her
+          // (otherwise a frame or two shows the lying pose squashed upright).
+          const cursor = screen.getCursorScreenPoint();
+          this.lying = false;
+          const { width, height } = this.size();
+          this.win.setOpacity(0);
+          this.win.setBounds({ x: Math.round(cursor.x - width / 2), y: Math.round(cursor.y - height * 0.3), width, height });
+          this.command({ act: 'stand' });
+          void this.waitFor('stand', 900).then(() => this.fadeIn(140));
+        }
+        clearInterval(this.physicsTimer);
+        this.physicsTimer = null;
+        this.motion = null;
+        this.mode = 'held';
+        this.anchor = { kind: 'none', hwnd: 0, rect: null };
+        const cursor = screen.getCursorScreenPoint();
+        const [x, y] = this.win.getPosition();
+        this.samples = [{ t: Date.now(), x, y }];
+        this.win.setIgnoreMouseEvents(false);
+        this.drag = {
+          offsetX: cursor.x - x,
+          offsetY: cursor.y - y,
+          timer: setInterval(() => this.dragTick(), TICK_MS),
+        };
+        this.send('companion:state', { state: 'held' });
+      });
+      return;
+    }
     this.interrupt();
     this.hanging = false;
     if (this.lying) {
@@ -857,7 +906,7 @@ class CompanionManager {
    */
   followAnchor() {
     if (!this.win || this.drag || this.motion || this.anchor.kind !== 'window') return;
-    if (this.mode === 'hidden' || this.mode === 'peeking') return;
+    if (this.mode === 'hidden' || this.mode === 'peeking' || this.sleeping || this.mode === 'window_hidden') return;
     const { x, y } = this.pos();
     const { width } = this.size();
     const centre = x + width / 2;
@@ -1261,6 +1310,8 @@ class CompanionManager {
   think() {
     if (this.alarmHold) return; // the alarm moment owns what happens next
     if (!this.win || this.hiddenForFullscreen || this.drag || this.motion) return;
+    // Skip autonomous behavior when sleeping or window hidden
+    if (this.sleeping || this.mode === 'window_hidden') return;
     if (this.hanging) {
       if (Date.now() >= this.nextThought) {
         this.nextThought = Date.now() + rand(6000, 12000);
@@ -1402,6 +1453,129 @@ class CompanionManager {
     }
   }
 
+  // ---- Companion Sleep/Wake & Hide/Show ---------------------------------------
+
+  /**
+   * Enter sleep mode: lie down, pause brain, stop autonomous behavior.
+   */
+  async sleep() {
+    if (!this.win) return;
+    this.interrupt();
+    // If sitting or lying, stand up first
+    if (this.mode === 'sitting') {
+      await this.standUp();
+    } else if (this.mode === 'lying') {
+      await this.getUp();
+    }
+    this.preSleepMode = this.mode;
+    this.mode = 'sleeping';
+    this._sleeping = true;
+    // Lie down facing viewer (side = 1)
+    this.command({ act: 'lie', side: 1 });
+    await this.waitFor('lie', 3000);
+    this.settleOnSurface(0);
+    // Stop brain timer
+    if (this.brainTimer) {
+      clearInterval(this.brainTimer);
+      this.brainTimer = null;
+    }
+    // Play sleep face
+    this.command({ act: 'perform', name: 'sleepFace' });
+    this.log('sleep mode entered');
+  }
+
+  /**
+   * Exit sleep mode: stand up, resume brain.
+   */
+  async wake() {
+    if (!this.win) return;
+    this._sleeping = false;
+    this.mode = this.preSleepMode ?? 'standing';
+    this.preSleepMode = null;
+    // Get up from lying position
+    await this.getUp();
+    this.settleOnSurface(0);
+    // Restart brain timer
+    this.brainTimer = setInterval(() => this.think(), 1000);
+    this.nextThought = Date.now() + rand(3000, 7000);
+    // Play wake/happy face
+    this.command({ act: 'perform', name: 'wakeFace' });
+    this.log('wake mode entered');
+  }
+
+  /**
+   * Hide the companion window entirely (win.hide()).
+   */
+  async hideWindow() {
+    if (!this.win) return;
+    this.interrupt();
+    this._windowHidden = true;
+    this.preSleepMode = this.mode;
+    this.mode = 'window_hidden';
+    // Stop all timers except cursor timer
+    this.stopTimers();
+    this.win.hide();
+    this.log('window hidden');
+  }
+
+  /**
+   * Show the companion window (win.showInactive()).
+   */
+  async showWindow() {
+    if (!this.win) return;
+    this._windowHidden = false;
+    this.mode = this.preSleepMode ?? 'standing';
+    this.preSleepMode = null;
+    this.win.showInactive();
+    // Restart timers
+    this.startCursorFeed();
+    this.anchorTimer = setInterval(() => {
+      try {
+        this.followAnchor();
+      } catch (error) {
+        console.warn('[companion] follow:', error && error.message);
+      }
+    }, TICK_MS);
+    this.brainTimer = setInterval(() => this.think(), 1000);
+    this.nextThought = Date.now() + rand(3000, 7000);
+    this.keepOnScreen();
+    this.startFall(0, 0);
+    this.log('window shown');
+  }
+
+  /**
+   * Adjust companion scale (size).
+   * @param {{ delta?: number, absolute?: number, reset?: boolean }} options
+   */
+  async adjustScale({ delta, absolute, reset } = {}) {
+    if (!this.win) return;
+    const current = Number(this.settings?.companion?.scale) || 1;
+    let next = current;
+
+    if (reset) {
+      next = 1.0;
+    } else if (Number.isFinite(absolute)) {
+      next = absolute;
+    } else if (Number.isFinite(delta)) {
+      next = current + delta;
+    } else {
+      return; // no valid operation
+    }
+
+    // Clamp to allowed range (matches size() method)
+    next = Math.max(0.4, Math.min(2.5, next));
+    if (next === current) return; // no change
+
+    // Persist setting
+    this.options.saveSettings({ companion: { scale: next } });
+    // applySettings will be called automatically by main.cjs settings watcher
+    // and will call this.resize() (the existing method) which updates window bounds
+
+    // Visual acknowledgement
+    this.command({ act: 'perform', name: 'happyFace' });
+    this.log(`scale adjusted: ${current} -> ${next}`);
+  }
+
   /** Commands from the backend (voice / chat: "come here", "put the icons back"). */
   handleCommand(command) {
     // Full body control: "perform:<action>" (jump/wave/dance/backflip/…)
@@ -1409,6 +1583,27 @@ class CompanionManager {
     if (typeof command === 'string' && command.startsWith('perform:')) {
       const name = command.slice('perform:'.length).trim();
       if (name) this.command({ act: 'perform', name });
+      return;
+    }
+    // Resize command: "resize:+0.25", "resize:1.5", "resize:reset" or object payload
+    if (typeof command === 'string' && command.startsWith('resize:')) {
+      const payload = command.slice('resize:'.length).trim();
+      if (payload === 'reset') {
+        void this.adjustScale({ reset: true });
+      } else if (payload.startsWith('+') || payload.startsWith('-')) {
+        const delta = Number(payload);
+        if (Number.isFinite(delta)) void this.adjustScale({ delta });
+      } else {
+        const absolute = Number(payload);
+        if (Number.isFinite(absolute)) void this.adjustScale({ absolute });
+      }
+      return;
+    }
+    // Object payload for resize (from backend)
+    if (command && typeof command === 'object' && command.type === 'resize') {
+      if (command.delta !== undefined) void this.adjustScale({ delta: command.delta });
+      else if (command.absolute !== undefined) void this.adjustScale({ absolute: command.absolute });
+      else if (command.reset) void this.adjustScale({ reset: true });
       return;
     }
     switch (command) {
@@ -1436,6 +1631,18 @@ class CompanionManager {
       case 'hide':
         if (this.mode === 'sitting') void this.standUp().then(() => this.hide());
         else void this.hide();
+        break;
+      case 'sleep':
+        if (!this.sleeping && this.win) void this.sleep();
+        break;
+      case 'wake':
+        if (this.sleeping) void this.wake();
+        break;
+      case 'hide_window':
+        if (!this.windowHidden && this.win) void this.hideWindow();
+        break;
+      case 'show_window':
+        if (this.windowHidden && this.win) void this.showWindow();
         break;
       case 'play_with_icons':
         if (this.mode === 'standing') void this.playWithIcon();
@@ -1479,6 +1686,11 @@ class CompanionManager {
       },
       { label: 'Wave', click: () => this.command({ act: 'perform', name: 'wave' }) },
       { label: 'Hide and peek', enabled: this.anchor.kind === 'ground' && !sitting, click: () => void this.hide() },
+      { type: 'separator' },
+      // Sleep / Wake
+      { label: this.sleeping ? 'Wake up' : 'Sleep', click: () => this.handleCommand(this.sleeping ? 'wake' : 'sleep') },
+      // Hide window / Show window
+      { label: this.windowHidden ? 'Show window' : 'Hide window', click: () => this.handleCommand(this.windowHidden ? 'show_window' : 'hide_window') },
       { type: 'separator' },
       { label: 'Put the desktop icons back', enabled: this.hasMovedIcons, click: () => void this.restoreIcons() },
       { label: 'Play with a desktop icon', type: 'checkbox', checked: Boolean(companion.iconPlay), click: (item) => this.options.saveSettings({ companion: { iconPlay: item.checked } }) },

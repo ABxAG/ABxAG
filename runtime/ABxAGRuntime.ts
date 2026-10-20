@@ -611,7 +611,21 @@ export class ABxAGRuntime {
     }));
     app.post("/api/companion/command", wrap((req) => {
       const command = String(req.body?.command || "");
-      if (!["come_here", "restore_icons", "sit", "stand", "stretch", "wave", "hide", "play_with_icons"].includes(command)) throw new Error("Unknown companion command.");
+      if (!["come_here", "restore_icons", "sit", "stand", "stretch", "wave", "hide", "play_with_icons", "sleep", "wake", "hide_window", "show_window"].includes(command)) throw new Error("Unknown companion command.");
+      return { ok: this.companionCommand(command) };
+    }));
+    app.post("/api/companion/resize", wrap((req) => {
+      const { delta, absolute, reset } = req.body as { delta?: number; absolute?: number; reset?: boolean };
+      let command = "resize:";
+      if (reset === true) {
+        command += "reset";
+      } else if (typeof absolute === "number" && Number.isFinite(absolute)) {
+        command += String(absolute);
+      } else if (typeof delta === "number" && Number.isFinite(delta)) {
+        command += (delta >= 0 ? "+" : "") + String(delta);
+      } else {
+        throw new Error("Provide delta, absolute, or reset: true");
+      }
       return { ok: this.companionCommand(command) };
     }));
     app.post("/api/companion/icons/move", wrap(async (req) => {

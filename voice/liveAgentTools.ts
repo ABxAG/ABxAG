@@ -22,7 +22,8 @@ export const LIVE_AGENT_INSTRUCTIONS = [
   "- If the user approves or rejects a pending ABxAG confirmation (e.g. 'haan bhej do', 'nahi rehne do'), call respondToConfirmation. Only call it with approve=true after an explicit yes from the user in this conversation.",
   "- 'Stop', 'ruk', 'bas', 'cancel' → controlTask(stop). 'Main karta hoon' / 'let me do it' → controlTask(take_over). 'Ab tum karo' → controlTask(return_control).",
   "- Alarms, timers, reminders (typed in the chat box or spoken): setReminder — convert clock phrases to a time string that parses, e.g. 'সকাল ৬টায়' → 06:00, 'শাম ৯টা' → 9:00 pm, 'tomorrow 7' → 07:00. Quiet requests: setDoNotDisturb or setProactivity. Contact aliases ('Papa is \"Papa ❤️\" on WhatsApp'): saveContact.",
-  "- Your desktop companion body (the character on the user's desktop): 'idhar aao' / 'come here' → companionAction(come_here); 'icons wapas rakho' / 'put the icons back' / 'fix my icons' → companionAction(restore_icons); also sit, stand, stretch, wave, hide, play_with_icons. Say a short, playful line about it.",
+  "- Your desktop companion body (the character on the user's desktop): 'idhar aao' / 'come here' → companionAction(come_here); 'icons wapas rakho' / 'put the icons back' / 'fix my icons' → companionAction(restore_icons); also sit, stand, stretch, wave, hide, play_with_icons. **Sleep/wake: 'so jao' / 'sleep' → companionAction(sleep), 'uto' / 'wake up' → companionAction(wake). Hide/show window: 'chup jao' / 'hide window' → companionAction(hide_window), 'dekhao' / 'show window' → companionAction(show_window).** Say a short, playful line about it.",
+  "- Resize the desktop companion: **'choto koro' / 'make smaller' → companionResize(delta: -0.25), 'boro koro' / 'make larger' → companionResize(delta: 0.25), 'reset size' / 'normal size' → companionResize(reset: true).** Or set absolute scale: 'size 1.5' → companionResize(absolute: 1.5).",
   "- Your MAIN 3D stage body (the big character in this window) moves on request: 'jump karo' / 'laaf dao' / 'dance karo' / 'bow down' / 'spin' / 'nod' / 'shrug' / 'stretch' / 'backflip' / 'dickbaazi karo' → characterPerform(action). 'Character change karo' / 'dusri wali aao' → switchCharacter (no target = next one). 'Dress red karo' / 'baal kaale karo' → setOutfitColor(color, part); add target companion to recolor only the desktop doll (e.g. 'companion ki dress blue karo'), target stage for only the main one — each keeps its own color. The DESKTOP-COMPANION doll obeys the same moves: 'doll dance karo' / 'putul ta nacho' / 'companion backflip karo' → companionPerform(action). Always perform first via the tool, then say one short playful line — never describe the move instead of doing it.",
   "STYLE: Short tasks get short replies — 'Ho gaya.', 'Mil gaya.', 'Yeh wala?', 'Wait, WhatsApp login nahi hai.' Explain at length only when asked. Never claim an action happened unless the task engine reported it.",
 ].join("\n");
@@ -112,11 +113,24 @@ export const LIVE_AGENT_TOOL_DECLARATIONS = [
   },
   {
     name: "companionAction",
-    description: "Make ABxAG's desktop companion (her character on the user's desktop) do something: come out to the user, put back desktop icons she moved, sit, stand up, stretch, wave, hide behind the screen edge, or play with a desktop icon.",
+    description: "Make ABxAG's desktop companion (her character on the user's desktop) do something: come out to the user, put back desktop icons she moved, sit, stand up, stretch, wave, hide behind the screen edge, play with a desktop icon, sleep, wake up, hide the window entirely, or show the window again.",
     parameters: {
       type: Type.OBJECT,
-      properties: { action: { type: Type.STRING, enum: ["come_here", "restore_icons", "sit", "stand", "stretch", "wave", "hide", "play_with_icons"] } },
+      properties: { action: { type: Type.STRING, enum: ["come_here", "restore_icons", "sit", "stand", "stretch", "wave", "hide", "play_with_icons", "sleep", "wake", "hide_window", "show_window"] } },
       required: ["action"],
+    },
+  },
+  {
+    name: "companionResize",
+    description: "Resize the desktop companion doll (make her smaller or larger). Use relative delta for incremental changes (+0.25 larger, -0.25 smaller), absolute for a specific scale (1.0 = normal), or reset to return to default size (1.0).",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        delta: { type: Type.NUMBER, description: "Relative change: +0.25 to grow, -0.25 to shrink (typical step)." },
+        absolute: { type: Type.NUMBER, description: "Absolute scale factor (0.4 to 2.5). 1.0 = normal." },
+        reset: { type: Type.BOOLEAN, description: "Reset to default size (1.0)." }
+      },
+      required: [],
     },
   },
   {
@@ -278,12 +292,30 @@ export async function handleLiveAgentTool(runtime: ABxAGRuntime, name: string, a
     }
     case "companionAction": {
       const action = String(args.action || "");
-      const allowed = ["come_here", "restore_icons", "sit", "stand", "stretch", "wave", "hide", "play_with_icons"];
+      const allowed = ["come_here", "restore_icons", "sit", "stand", "stretch", "wave", "hide", "play_with_icons", "sleep", "wake", "hide_window", "show_window"];
       if (!allowed.includes(action)) return { error: `Unknown companion action ${action}` };
       const settings = runtime.settings.get();
       if (!settings.companion.enabled) return { ok: false, note: "The desktop companion is turned off (Settings → Character & companion)." };
       if (action === "play_with_icons" && !settings.companion.iconPlay) return { ok: false, note: "Playing with desktop icons is turned off in Settings → Character & companion." };
       return { ok: runtime.companionCommand(action), action };
+    }
+    case "companionResize": {
+      const settings = runtime.settings.get();
+      if (!settings.companion.enabled) return { ok: false, note: "The desktop companion is turned off (Settings → Character & companion)." };
+      const { delta, absolute, reset } = args as { delta?: number; absolute?: number; reset?: boolean };
+      // Build command string for the companion shell
+      let command = "resize:";
+      if (reset === true) {
+        command += "reset";
+      } else if (typeof absolute === "number" && Number.isFinite(absolute)) {
+        command += String(absolute);
+      } else if (typeof delta === "number" && Number.isFinite(delta)) {
+        command += (delta >= 0 ? "+" : "") + String(delta);
+      } else {
+        return { error: "Provide delta, absolute, or reset: true" };
+      }
+      runtime.companionCommand(command);
+      return { ok: true, command, note: "The desktop companion resizes now. Say one short playful line." };
     }
     case "characterPerform": {
       const name = normalizeStageAction(String(args.action || ""));
