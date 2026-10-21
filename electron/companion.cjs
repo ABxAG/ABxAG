@@ -139,18 +139,14 @@ class CompanionManager {
   applySettings(settings) {
     // A new graphics budget (quality / auto step-down) needs a fresh GPU
     // context: reload her page.
-    const graphics = JSON.stringify({ q: settings?.graphics?.quality, s: settings?.graphics?.autoStep });
+    const graphics = JSON.stringify({ q: settings?.companion?.quality, s: settings?.graphics?.autoStep });
     if (this.win && !this.win.isDestroyed() && this.graphicsKey && graphics !== this.graphicsKey) this.win.webContents.reload();
     this.graphicsKey = graphics;
     this.settings = settings;
     const enabled = Boolean(settings?.companion?.enabled);
     if (enabled && !this.win) this.create();
     else if (!enabled && this.win) this.destroy();
-    else if (this.win) {
-      this.resize();
-      // Ensure feet stay on surface after any settings change that might affect size/position
-      this.settleOnSurface(0);
-    }
+    else if (this.win) this.resize();
   }
 
   get level() {
@@ -348,8 +344,14 @@ class CompanionManager {
     if (w === width && h === height) return;
     const [x, y] = this.win.getPosition();
     this.win.setBounds({ x, y: y + h - height, width, height });
-    // Re-settle on surface so feet stay on the ground after scale change
-    this.settleOnSurface(0);
+    // Re-settle on surface so feet stay on the ground after scale change.
+    // Wait for renderer to send updated metrics (contact point) before settling.
+    this.waitFor('metrics', 2000).then(() => {
+      if (this.win) this.settleOnSurface(0);
+    }).catch(() => {
+      // Fallback: settle anyway using current best estimate
+      if (this.win) this.settleOnSurface(0);
+    });
   }
 
   stopTimers() {
