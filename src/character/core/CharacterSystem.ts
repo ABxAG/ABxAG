@@ -1153,11 +1153,13 @@ export class CharacterSystem {
 
     // ---- 10. physics ------------------------------------------------------
     this.feedScreenMotion();
-    if (this.physicsEnabled) physics.update(delta);
-    // Vertex cloth follows the final skeleton (after strand physics).
-    if (this.cloth) {
-      this.cloth.setColliders(physics.worldCapsules());
-      this.cloth.update(delta);
+    if (this.physicsEnabled) {
+      physics.update(delta);
+      // Vertex cloth follows the final skeleton (after strand physics).
+      if (this.cloth) {
+        this.cloth.setColliders(physics.worldCapsules());
+        this.cloth.update(delta);
+      }
     }
     this.editor?.afterPose();
     if (this.physicsDebug) this.updatePhysicsDebug();
