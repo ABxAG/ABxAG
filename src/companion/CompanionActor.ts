@@ -273,8 +273,10 @@ export class CompanionActor {
       this.clearSolvedPose(duration);
       this.heldTarget = 0;
     }
+    const wasPeek = this.mode === 'peek';
     const wasSitting = this.mode === 'sit';
     if (this.mode === 'peek' || this.mode === 'reach') this.clearSolvedPose(duration);
+    if (wasPeek) this.system.setPhysicsEnabled(true); // Re-enable physics when leaving peek
     if (wasSitting) this.system.stand(duration);
     this.turnTarget = 0;
     this.mode = 'stand';
@@ -563,10 +565,14 @@ export class CompanionActor {
     const floor = this.system.floorY;
     if (!editor || !hips || floor === null) return;
     if (phase === 'out') {
+      // Re-enable physics when exiting peek
+      this.system.setPhysicsEnabled(true);
       this.system.playBehaviour('happyFace');
       this.standUp(0.8);
       return;
     }
+    // Disable physics during peek to prevent head/neck from falling back at screen edge
+    this.system.setPhysicsEnabled(false);
     this.stopWalking(true);
     if (this.mode === 'sit') this.system.stand(0);
     this.faceViewer();

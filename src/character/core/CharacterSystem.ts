@@ -107,6 +107,7 @@ export class CharacterSystem {
   private gaze: GazeController | null = null;
   private grants: GrantSolver | null = null;
   private physics: SecondaryMotion | null = null;
+  private physicsEnabled = true;
   /** Vertex-level cloth for every garment (stays worn). */
   private cloth: ClothLayer | null = null;
   private clothSettings: Partial<ClothSettings> = {};
@@ -860,6 +861,11 @@ export class CharacterSystem {
     this.frameCompanion({ top: 0.16, width: 0.34, floorPx: 8 });
   }
 
+  /** Enable/disable secondary motion physics (spring bones, cloth). */
+  setPhysicsEnabled(enabled: boolean): void {
+    this.physicsEnabled = enabled;
+  }
+
   start(): void {
     if (this.running || this.disposed) return;
     this.running = true;
@@ -1147,7 +1153,7 @@ export class CharacterSystem {
 
     // ---- 10. physics ------------------------------------------------------
     this.feedScreenMotion();
-    physics.update(delta);
+    if (this.physicsEnabled) physics.update(delta);
     // Vertex cloth follows the final skeleton (after strand physics).
     if (this.cloth) {
       this.cloth.setColliders(physics.worldCapsules());
