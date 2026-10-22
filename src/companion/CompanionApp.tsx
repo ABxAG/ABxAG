@@ -188,8 +188,7 @@ export const CompanionApp: React.FC = () => {
 
   useEffect(() => () => actorRef.current?.dispose(), []);
 
-  // Resize handler: when the canvas size changes (window resize), notify the character system
-  // so it can invalidate caches and re-frame the camera, then send updated metrics
+  // Resize handler: when the canvas size changes (window resize), send updated metrics
   // so the shell can re-settle the window on the surface with correct floorY/halfWidthPx.
   useEffect(() => {
     if (!bridge || !systemRef.current) return;
@@ -200,9 +199,6 @@ export const CompanionApp: React.FC = () => {
       const h = el.clientHeight;
       if (w !== lastSize.current.width || h !== lastSize.current.height) {
         lastSize.current = { width: w, height: h };
-        // Notify character system to re-frame camera and invalidate sole cache
-        systemRef.current?.resize(w, h);
-        // Send fresh metrics after re-frame
         const actor = actorRef.current;
         if (actor) bridge.metrics(actor.metrics());
       }

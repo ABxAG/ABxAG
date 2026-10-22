@@ -78,7 +78,6 @@ class CompanionManager {
     this.anchorTimer = null;
     this.brainTimer = null;
     this.moveTimer = null;
-    this.physicsValidationTimer = null;
     this.nextThought = Date.now() + 8000;
     this.waiters = new Map(); // act -> resolve
     this.lastUserTouch = 0;
@@ -324,30 +323,6 @@ class CompanionManager {
       }
     }, TICK_MS);
     this.brainTimer = setInterval(() => this.think(), 1000);
-    // Periodic physics validation: every 3s check if she's properly on a surface
-    this.physicsValidationTimer = setInterval(() => {
-      if (!this.win || this.drag || this.motion || this.sleeping || this.mode === 'window_hidden') return;
-      if (this.mode === 'standing' && this.anchor.kind === 'ground') {
-        const area = this.area();
-        const { height } = this.size();
-        const [, y] = this.win.getPosition();
-        const targetY = area.y + area.height - height;
-        if (Math.abs(y - targetY) > 30) {
-          this.log('physics validation: drifted from ground, re-settling');
-          this.settleOnSurface(300);
-        }
-      }
-      if (this.mode === 'sitting' && this.anchor.kind === 'window') {
-        // Verify the window ledge still exists under her
-        const found = this.surfaces();
-        const current = found.windows.find((s) => s.hwnd === this.anchor.hwnd);
-        if (!current) {
-          this.log('physics validation: sitting ledge gone, dropping');
-          this.anchor = { kind: 'none', hwnd: 0, rect: null };
-          this.startFall(0, 0);
-        }
-      }
-    }, 3000);
     // Land wherever the saved position was (kept on screen).
     this.later(600, () => {
       this.keepOnScreen();
@@ -384,14 +359,12 @@ class CompanionManager {
     clearInterval(this.physicsTimer);
     clearInterval(this.anchorTimer);
     clearInterval(this.brainTimer);
-    clearInterval(this.physicsValidationTimer);
     clearInterval(this.moveTimer);
     clearInterval(this.settleTimer);
     clearInterval(this.drag?.timer);
     for (const t of this.timers) clearTimeout(t);
     this.timers.clear();
     this.cursorTimer = this.physicsTimer = this.anchorTimer = this.brainTimer = this.moveTimer = null;
-    this.physicsValidationTimer = null;
     this.drag = null;
     for (const resolve of this.waiters.values()) resolve(false);
     this.waiters.clear();
@@ -1347,33 +1320,6 @@ class CompanionManager {
     if (!this.win || this.hiddenForFullscreen || this.drag || this.motion) return;
     // Skip autonomous behavior when sleeping or window hidden
     if (this.sleeping || this.mode === 'window_hidden') return;
-
-    // Self-righting: recover from invalid states (floating, stuck falling, wrong mode)
-    if (this.mode === 'falling' && Date.now() - (this.motion?.last || 0) > 5000) {
-      // Stuck falling for >5s: teleport to ground and stand up
-      this.log('self-right: stuck falling, recovering to ground');
-      this.motion = null;
-      clearInterval(this.physicsTimer);
-      this.physicsTimer = null;
-      this.anchor = { kind: 'ground', hwnd: 0, rect: null };
-      this.mode = 'standing';
-      this.settleOnSurface(0);
-      this.command({ act: 'stand' });
-      this.nextThought = Date.now() + 5000;
-      return;
-    }
-    if (this.mode === 'standing' && !this.anchor || this.anchor.kind === 'none') {
-      // Floating with no anchor: settle to ground
-      const area = this.area();
-      const { height } = this.size();
-      const targetY = area.y + area.height - height;
-      const [, y] = this.win.getPosition();
-      if (Math.abs(y - targetY) > 50) {
-        this.log('self-right: floating, settling to ground');
-        this.settleOnSurface(500);
-        this.anchor = { kind: 'ground', hwnd: 0, rect: null };
-      }
-    }
     if (this.hanging) {
       if (Date.now() >= this.nextThought) {
         this.nextThought = Date.now() + rand(6000, 12000);

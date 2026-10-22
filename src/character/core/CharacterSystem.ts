@@ -107,7 +107,6 @@ export class CharacterSystem {
   private gaze: GazeController | null = null;
   private grants: GrantSolver | null = null;
   private physics: SecondaryMotion | null = null;
-  private physicsEnabled = true;
   /** Vertex-level cloth for every garment (stays worn). */
   private cloth: ClothLayer | null = null;
   private clothSettings: Partial<ClothSettings> = {};
@@ -554,7 +553,6 @@ export class CharacterSystem {
   }
 
   private soleCache: number | null | undefined;
-  private _soleCacheDirty = true;
   /** Bottom-of-shoe vertices per foot (see footSoleY). */
   private readonly soleVertices: Record<'LEFT' | 'RIGHT', number[]> = { LEFT: [], RIGHT: [] };
 
@@ -564,7 +562,7 @@ export class CharacterSystem {
    * usable: hidden parts, long hair or ribbons often reach below the shoes.
    */
   private footSoleY(): number | null {
-    if (this.soleCache !== undefined && !this._soleCacheDirty) return this.soleCache;
+    if (this.soleCache !== undefined) return this.soleCache;
     const model = this.model, humanoid = this.rigInfo?.humanoid;
     if (!model || !humanoid) return null;
     const feet = new Set<number>();
@@ -646,7 +644,6 @@ export class CharacterSystem {
     }
     model.mesh.updateMatrixWorld(true);
     this.soleCache = Number.isFinite(minY) ? new THREE.Vector3(0, minY, 0).applyMatrix4(model.mesh.matrixWorld).y : null;
-    this._soleCacheDirty = false;
     return this.soleCache;
   }
 
@@ -855,15 +852,7 @@ export class CharacterSystem {
   }
 
   resize(width: number, height: number): void {
-    this._soleCacheDirty = true; // Invalidate sole cache when canvas resizes
     this.stage.resize(width, height);
-    // Re-frame camera for new canvas size so floorCanvasY() is accurate
-    this.frameCompanion({ top: 0.16, width: 0.34, floorPx: 8 });
-  }
-
-  /** Enable/disable secondary motion physics (spring bones, cloth). */
-  setPhysicsEnabled(enabled: boolean): void {
-    this.physicsEnabled = enabled;
   }
 
   start(): void {
@@ -1146,20 +1135,18 @@ export class CharacterSystem {
     morphs.commitBoneMorphs();
 
     // ---- 8. grants --------------------------------------------------------
-    if (this.physicsEnabled) grants.solve();
+    grants.solve();
 
     // ---- 9. world matrices ------------------------------------------------
     model.mesh.updateMatrixWorld(true);
 
     // ---- 10. physics ------------------------------------------------------
     this.feedScreenMotion();
-    if (this.physicsEnabled) {
-      physics.update(delta);
-      // Vertex cloth follows the final skeleton (after strand physics).
-      if (this.cloth) {
-        this.cloth.setColliders(physics.worldCapsules());
-        this.cloth.update(delta);
-      }
+    physics.update(delta);
+    // Vertex cloth follows the final skeleton (after strand physics).
+    if (this.cloth) {
+      this.cloth.setColliders(physics.worldCapsules());
+      this.cloth.update(delta);
     }
     this.editor?.afterPose();
     if (this.physicsDebug) this.updatePhysicsDebug();
@@ -1623,7 +1610,6 @@ export class CharacterSystem {
     const head = this.slotWorld('HEAD');
     const hips = this.slotWorld('LOWER_BODY') ?? this.slotWorld('HIPS');
     if (!model || floor === null || !head || !hips) return;
-    this._soleCacheDirty = true; // Invalidate sole cache when framing changes
     const h = this.worldHeight;
     const fov = THREE.MathUtils.degToRad(this.stage.camera.fov);
     const tan = Math.tan(fov / 2);
@@ -1656,7 +1642,6 @@ export class CharacterSystem {
   setRoll(radians: number): void {
     const root = this.characterRoot;
     if (!root) return;
-    this._soleCacheDirty = true; // Invalidate sole cache when roll changes
     // Turn first (about her own vertical), then roll in screen space.
     root.rotation.order = 'ZYX';
     root.rotation.z = radians;
@@ -1670,7 +1655,6 @@ export class CharacterSystem {
    */
   frameAround(points: THREE.Vector3[], options: { margin?: number; floorPx?: number } = {}): number | null {
     if (!points.length) return null;
-    this._soleCacheDirty = true; // Invalidate sole cache when framing changes
     const min = new THREE.Vector3(Infinity, Infinity, Infinity);
     const max = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
     for (const p of points) { min.min(p); max.max(p); }
