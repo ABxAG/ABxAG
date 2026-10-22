@@ -856,6 +856,8 @@ export class CharacterSystem {
   resize(width: number, height: number): void {
     this._soleCacheDirty = true; // Invalidate sole cache when canvas resizes
     this.stage.resize(width, height);
+    // Re-frame camera for new canvas size so floorCanvasY() is accurate
+    this.frameCompanion({ top: 0.16, width: 0.34, floorPx: 8 });
   }
 
   start(): void {
