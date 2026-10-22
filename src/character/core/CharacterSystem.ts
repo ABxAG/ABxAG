@@ -1146,7 +1146,7 @@ export class CharacterSystem {
     morphs.commitBoneMorphs();
 
     // ---- 8. grants --------------------------------------------------------
-    grants.solve();
+    if (this.physicsEnabled) grants.solve();
 
     // ---- 9. world matrices ------------------------------------------------
     model.mesh.updateMatrixWorld(true);
