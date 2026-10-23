@@ -344,14 +344,9 @@ class CompanionManager {
     if (w === width && h === height) return;
     const [x, y] = this.win.getPosition();
     this.win.setBounds({ x, y: y + h - height, width, height });
-    // Re-settle on surface so feet stay on the ground after scale change.
-    // Wait for renderer to send updated metrics (contact point) before settling.
-    this.waitFor('metrics', 2000).then(() => {
-      if (this.win) this.settleOnSurface(0);
-    }).catch(() => {
-      // Fallback: settle anyway using current best estimate
-      if (this.win) this.settleOnSurface(0);
-    });
+    // Renderer-first: notify renderer of new size so it can compute fresh metrics
+    // and settle locally, then report back the corrected position.
+    this.send('companion:resize', { width, height });
   }
 
   stopTimers() {

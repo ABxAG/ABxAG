@@ -63,7 +63,6 @@ export const CompanionApp: React.FC = () => {
   const systemRef = useRef<CharacterSystem | null>(null);
   const actorRef = useRef<CompanionActor | null>(null);
   const interactive = useRef(false);
-  const lastSize = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
   const pressed = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const reactionTimer = useRef<number | null>(null);
   const followCursor = useRef(true);
@@ -182,32 +181,19 @@ export const CompanionApp: React.FC = () => {
         actorRef.current?.handle({ act: 'state', state: s.state });
         setShadow((prev) => ({ ...prev, visible: s.state === 'standing' }));
       }),
+      // Resize: renderer settles locally, then reports corrected position
+      bridge.on('companion:resize', () => {
+        const system = systemRef.current;
+        if (!system) return;
+        system.settleOnSurface(0);
+        const actor = actorRef.current;
+        if (actor) bridge.metrics(actor.metrics());
+      }),
     ];
     return () => offs.forEach((off) => off());
   }, []);
 
   useEffect(() => () => actorRef.current?.dispose(), []);
-
-  // Resize handler: when the canvas size changes (window resize), send updated metrics
-  // so the shell can re-settle the window on the surface with correct floorY/halfWidthPx.
-  useEffect(() => {
-    if (!bridge || !systemRef.current) return;
-    const checkSize = () => {
-      const el = systemRef.current?.stage?.renderer?.domElement;
-      if (!el) return;
-      const w = el.clientWidth;
-      const h = el.clientHeight;
-      if (w !== lastSize.current.width || h !== lastSize.current.height) {
-        lastSize.current = { width: w, height: h };
-        const actor = actorRef.current;
-        if (actor) bridge.metrics(actor.metrics());
-      }
-    };
-    // Check immediately in case resize already happened
-    checkSize();
-    const id = window.setInterval(checkSize, 250);
-    return () => window.clearInterval(id);
-  }, [bridge]);
 
   const onPointerDown = (event: React.PointerEvent) => {
     if (!bridge || event.button !== 0) return;
