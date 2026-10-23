@@ -1,5 +1,33 @@
 [
   {
+    "tag": "v1.1.28",
+    "date": "2026-10-22T14:00:00Z",
+    "title": "v1.1.28 — Based on v1.1.25",
+    "notes": "## ABxAG v1.1.28\n\n### Based on v1.1.25\n\nThis release is based on the v1.1.25 codebase with the version updated to v1.1.28.\n\n### Includes v1.1.25 features:\n\n- **ABxAG starts itself again after every install and every update.** The installer is launched with `--force-run` so the freshly installed build starts as soon as the installer finishes.\n- **A relaunch no longer kills itself.** After an update the new build waits for the lock instead of giving up on the first try.\n- **The updater keeps a log.** `%APPDATA%\\ABxAG\\logs\\updates.log` records every step, including the exact installer arguments.\n\n### Verified\n\n- tsc clean - full agent, character and Python suites green\n- The installer arguments are asserted in tests\n- Public build: no bundled character models, users import their own on first run",
+    "assets": [
+      {
+        "name": "ABxAG-Setup-1.1.28.exe",
+        "size": 125315463,
+        "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.28/ABxAG-Setup-1.1.28.exe"
+      },
+      {
+        "name": "ABxAG-Portable-1.1.28.exe",
+        "size": 122555838,
+        "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.28/ABxAG-Portable-1.1.28.exe"
+      },
+      {
+        "name": "ABxAG-Setup-1.1.28.exe.blockmap",
+        "size": 129867,
+        "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.28/ABxAG-Setup-1.1.28.exe.blockmap"
+      },
+      {
+        "name": "latest.yml",
+        "size": 342,
+        "url": "https://github.com/ABxAG/ABxAG/releases/download/v1.1.28/latest.yml"
+      }
+    ]
+  },
+  {
     "tag": "v1.1.25",
     "date": "2026-10-19T00:27:41Z",
     "title": null,
