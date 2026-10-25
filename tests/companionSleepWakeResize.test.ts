@@ -31,7 +31,8 @@ describe('Companion Sleep/Wake/Hide/Show', () => {
     const handleCommandStr = CompanionManager.prototype.handleCommand.toString();
     assert.ok(handleCommandStr.includes('resize:'), 'should handle resize: string commands');
     assert.ok(handleCommandStr.includes('adjustScale'), 'should call adjustScale method');
-    assert.ok(handleCommandStr.includes('type === \'resize\''), 'should handle object resize commands');
+    // Updated: now checks for delta/absolute/reset properties directly (not command.type === 'resize')
+    assert.ok(handleCommandStr.includes('command.delta !== undefined'), 'should handle delta in object');
   });
 
   it('should have sleeping and windowHidden getters', () => {
@@ -62,11 +63,10 @@ describe('Companion Resize Commands', () => {
   });
 
   it('should handle object payload for resize', () => {
-    assert.ok(handleCommandStr.includes('command.type === \'resize\''), 
-      'should handle object resize payload');
-    assert.ok(handleCommandStr.includes('command.delta'), 
+    // Updated: now checks for delta/absolute/reset properties directly (not command.type === 'resize')
+    assert.ok(handleCommandStr.includes('command.delta !== undefined'), 
       'should handle delta in object');
-    assert.ok(handleCommandStr.includes('command.absolute'), 
+    assert.ok(handleCommandStr.includes('command.absolute !== undefined'), 
       'should handle absolute in object');
     assert.ok(handleCommandStr.includes('command.reset'), 
       'should handle reset in object');

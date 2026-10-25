@@ -307,7 +307,22 @@ export async function handleLiveAgentTool(runtime: ABxAGRuntime, name: string, a
     case "companionResize": {
       const settings = runtime.settings.get();
       if (!settings.companion.enabled) return { ok: false, note: "The desktop companion is turned off (Settings → Character & companion)." };
-      const { delta, absolute, reset } = args as { delta?: number; absolute?: number; reset?: boolean };
+      let { delta, absolute, reset } = args as { delta?: number; absolute?: number | string; reset?: boolean };
+
+      // Parse Bengali/English numbers if absolute is a string (e.g., "১.৫" → 1.5)
+      if (typeof absolute === 'string') {
+        const bengaliDigits = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+        let normalized = absolute;
+        for (let i = 0; i < 10; i++) {
+          normalized = normalized.replaceAll(bengaliDigits[i], String(i));
+        }
+        const match = normalized.match(/([0-9]*\.?[0-9]+)/);
+        if (match) {
+          const parsed = Number(match[1]);
+          if (Number.isFinite(parsed)) absolute = parsed;
+        }
+      }
+
       // Build command string for the companion shell
       let command = "resize:";
       if (reset === true) {

@@ -80,6 +80,9 @@ class CompanionManager {
     this.moveTimer = null;
     this.nextThought = Date.now() + 8000;
     this.waiters = new Map(); // act -> resolve
+    // Resize debounce state
+    this._resizeDebounceTimer = null;
+    this._resizePending = null; // { delta?, absolute?, reset? }
     this.lastUserTouch = 0;
     this.iconFile = path.join(options.dataDir, 'companion', 'icon-positions.json');
     this.samples = [];
@@ -332,6 +335,12 @@ class CompanionManager {
 
   destroy() {
     this.stopTimers();
+    // Cleanup resize debounce timer
+    if (this._resizeDebounceTimer) {
+      clearTimeout(this._resizeDebounceTimer);
+      this._resizeDebounceTimer = null;
+    }
+    this._resizePending = null;
     if (this.win && !this.win.isDestroyed()) this.win.destroy();
     this.win = null;
   }
@@ -344,9 +353,14 @@ class CompanionManager {
     if (w === width && h === height) return;
     const [x, y] = this.win.getPosition();
     this.win.setBounds({ x, y: y + h - height, width, height });
-    // Renderer-first: notify renderer of new size so it can compute fresh metrics
-    // and settle locally, then report back the corrected position.
-    this.send('companion:resize', { width, height });
+    // Re-settle on surface so feet stay on the ground after scale change.
+    // Wait for renderer to send updated metrics (contact point) before settling.
+    this.waitFor('metrics', 2000).then(() => {
+      if (this.win) this.settleOnSurface(0);
+    }).catch(() => {
+      // Fallback: settle anyway using current best estimate
+      if (this.win) this.settleOnSurface(0);
+    });
   }
 
   stopTimers() {
@@ -1547,36 +1561,66 @@ class CompanionManager {
   }
 
   /**
-   * Adjust companion scale (size).
+   * Adjust companion scale (size) — hardened with debounce, clamp logging, atomic persist.
    * @param {{ delta?: number, absolute?: number, reset?: boolean }} options
    */
   async adjustScale({ delta, absolute, reset } = {}) {
     if (!this.win) return;
-    const current = Number(this.settings?.companion?.scale) || 1;
-    let next = current;
 
-    if (reset) {
-      next = 1.0;
-    } else if (Number.isFinite(absolute)) {
-      next = absolute;
-    } else if (Number.isFinite(delta)) {
-      next = current + delta;
-    } else {
-      return; // no valid operation
+    // Debounce: if a resize is pending within 500ms, overwrite and restart timer
+    if (this._resizeDebounceTimer) {
+      this._resizePending = { delta, absolute, reset };
+      return;
     }
 
-    // Clamp to allowed range (matches size() method)
-    next = Math.max(0.4, Math.min(2.5, next));
-    if (next === current) return; // no change
+    this._resizePending = { delta, absolute, reset };
+    this._resizeDebounceTimer = setTimeout(async () => {
+      const pending = this._resizePending;
+      this._resizePending = null;
+      this._resizeDebounceTimer = null;
 
-    // Persist setting
-    this.options.saveSettings({ companion: { scale: next } });
-    // applySettings will be called automatically by main.cjs settings watcher
-    // and will call this.resize() (the existing method) which updates window bounds
+      if (!this.win || !pending) return;
 
-    // Visual acknowledgement
-    this.command({ act: 'perform', name: 'happyFace' });
-    this.log(`scale adjusted: ${current} -> ${next}`);
+      const current = Number(this.settings?.companion?.scale) || 1;
+      let next = current;
+
+      if (pending.reset) {
+        next = 1.0;
+      } else if (Number.isFinite(pending.absolute)) {
+        next = pending.absolute;
+      } else if (Number.isFinite(pending.delta)) {
+        next = current + pending.delta;
+      } else {
+        return; // no valid operation
+      }
+
+      // Clamp with logging
+      const clamped = Math.max(0.4, Math.min(2.5, next));
+      if (clamped !== next) {
+        this.log(`scale clamp: ${next} -> ${clamped} (range 0.4-2.5)`);
+      }
+      next = clamped;
+
+      if (next === current) {
+        this.log(`scale unchanged: ${current}`);
+        return;
+      }
+
+      // Persist setting — wait for confirmation before ack
+      try {
+        await this.options.saveSettings({ companion: { scale: next } });
+        // applySettings will be called automatically by main.cjs settings watcher
+        // and will call this.resize() (existing method) which updates window bounds
+        // and waits for renderer metrics before settleOnSurface()
+
+        // Visual acknowledgement (only after successful persist)
+        this.command({ act: 'perform', name: 'happyFace' });
+        this.log(`scale adjusted: ${current} -> ${next}`);
+      } catch (error) {
+        this.log(`scale persist failed: ${error && error.message}`);
+        // No ack on failure
+      }
+    }, 500); // 500ms debounce window
   }
 
   /** Commands from the backend (voice / chat: "come here", "put the icons back"). */
@@ -1602,8 +1646,8 @@ class CompanionManager {
       }
       return;
     }
-    // Object payload for resize (from backend)
-    if (command && typeof command === 'object' && command.type === 'resize') {
+    // Object payload (from backend, future-proof)
+    if (command && typeof command === 'object' && (command.delta !== undefined || command.absolute !== undefined || command.reset)) {
       if (command.delta !== undefined) void this.adjustScale({ delta: command.delta });
       else if (command.absolute !== undefined) void this.adjustScale({ absolute: command.absolute });
       else if (command.reset) void this.adjustScale({ reset: true });
