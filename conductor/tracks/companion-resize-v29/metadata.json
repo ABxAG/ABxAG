@@ -1,0 +1,11 @@
+{
+  "id": "companion-resize-v29",
+  "title": "Companion Resize Control (Hardened) — v1.1.29",
+  "status": "planned",
+  "created": "2026-10-25",
+  "spec": "spec.md",
+  "plan": "plan.md",
+  "version": "1.1.29",
+  "basedOn": "v1.1.28 (DEV branch bf09636)",
+  "supersedes": ["companion-resize", "companion-sleep-wake"]
+}

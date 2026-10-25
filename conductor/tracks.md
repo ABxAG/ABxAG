@@ -12,3 +12,4 @@
 - [alarm-ring](./tracks/alarm-ring/index.md) - Alarm & reminder ring: doll grows + waves, ring card, Settings list
 - [companion-sleep-wake](./tracks/companion-sleep-wake/index.md) — Companion sleep/wake cycle & window hide/show
 - [companion-resize](./tracks/companion-resize/index.md) — Companion resize via voice/text (bigger/smaller/reset)
+- [companion-resize-v29](./tracks/companion-resize-v29/index.md) — Companion resize control (hardened) for v1.1.29: debounced, metrics-synced, boundary-safe, Bengali numbers
