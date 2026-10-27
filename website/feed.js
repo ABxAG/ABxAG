@@ -3,13 +3,10 @@
  * version list works even where api.github.com is blocked. Same
  * normalization as electron/updates.cjs parseReleases.
  *
- * Asset sizes: if the snapshot (releases.json) has size=0 or missing,
- * the feed fetches the real size from the GitHub release API on-demand
- * and caches it in-memory for the session. */
+ * Size auto-population: if an asset's size is missing or 0, the feed
+ * fetches Content-Length via a HEAD request to the download URL. */
 (function () {
   'use strict';
-  const SIZE_CACHE = new Map(); // url -> size
-
   function norm(list) {
     const out = [];
     for (const r of Array.isArray(list) ? list : []) {
@@ -20,6 +17,13 @@
       const assets = Array.isArray(r.assets) ? r.assets : [];
       const pick = (re) => assets.find((a) => re.test(a.name || ''));
       const url = (a) => (a && (a.browser_download_url || a.url)) || '';
+      const sizeOf = (a) => {
+        // Auto-populate: if size is missing/0, try to fetch via HEAD request
+        const s = a && (a.size || a.filesize || 0);
+        if (s > 0) return s;
+        // Return 0 — will be lazily fetched later if needed
+        return 0;
+      };
       const setup = pick(/-Setup-.*\.exe$/i);
       const portable = pick(/-Portable-.*\.exe$/i);
       out.push({
@@ -28,8 +32,8 @@
         notes: String(r.body || r.notes || ''),
         date: r.published_at || r.date || null,
         prerelease: Boolean(r.prerelease),
-        setup: setup ? { name: setup.name, url: url(setup), size: setup.size || 0 } : null,
-        portable: portable ? { name: portable.name, url: url(portable), size: portable.size || 0 } : null,
+        setup: setup ? { name: setup.name, url: url(setup), size: sizeOf(setup) } : null,
+        portable: portable ? { name: portable.name, url: url(portable), size: sizeOf(portable) } : null,
       });
     }
     const parts = (v) => String(v).split('.').map((n) => parseInt(n, 10) || 0);
@@ -42,7 +46,6 @@
     });
     return out;
   }
-
   async function getJSON(url, timeoutMs) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), timeoutMs || 15000);
@@ -54,39 +57,20 @@
       clearTimeout(t);
     }
   }
-
-  /* Fetch real asset size from GitHub release API if missing (size=0). */
-  async function fetchAssetSize(releaseTag, assetName) {
-    const cacheKey = releaseTag + '/' + assetName;
-    if (SIZE_CACHE.has(cacheKey)) return SIZE_CACHE.get(cacheKey);
+  /* Auto-populate size via HEAD request if missing or 0. */
+  async function fetchSize(url) {
+    if (!url) return 0;
     try {
-      const data = await getJSON('https://api.github.com/repos/ABxAG/ABxAG/releases/tags/' + releaseTag, 10000);
-      const asset = (data.assets || []).find((a) => a.name === assetName);
-      const size = asset ? (asset.size || 0) : 0;
-      SIZE_CACHE.set(cacheKey, size);
-      return size;
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 10000);
+      const res = await fetch(url, { method: 'HEAD', signal: ctrl.signal });
+      clearTimeout(t);
+      const len = res.headers.get('content-length');
+      return len ? parseInt(len, 10) || 0 : 0;
     } catch (e) {
-      SIZE_CACHE.set(cacheKey, 0);
       return 0;
     }
   }
-
-  /* Enrich releases with real sizes if missing. */
-  async function enrichSizes(rels) {
-    const promises = [];
-    for (const r of rels) {
-      const tag = 'v' + r.version;
-      if (r.setup && (!r.setup.size || r.setup.size === 0)) {
-        promises.push(fetchAssetSize(tag, r.setup.name).then((s) => { if (s) r.setup.size = s; }));
-      }
-      if (r.portable && (!r.portable.size || r.portable.size === 0)) {
-        promises.push(fetchAssetSize(tag, r.portable.name).then((s) => { if (s) r.portable.size = s; }));
-      }
-    }
-    await Promise.allSettled(promises);
-    return rels;
-  }
-
   async function load(base) {
     // 1) Bundled snapshot (always shippable). 2) Same-directory refresh.
     // 3) Site mirrors. 4) GitHub API last (blocked on some networks).
@@ -94,20 +78,30 @@
       base + 'releases.json',
       'https://abxag.absup.dev/releases.json',
       'https://abxag.pages.dev/releases.json',
-      'https://api.github.com/repos/ABxAG/ABxAG/releases?per_page=30',
+      'https://api.github.com/ABxAG/ABxAG/releases?per_page=30',
     ];
     for (const u of urls) {
       try {
         const rels = norm(await getJSON(u));
         if (rels.length) {
-          await enrichSizes(rels);
+          // Auto-populate missing sizes via HEAD requests (parallel)
+          const sizePromises = [];
+          for (const r of rels) {
+            if (r.setup && (!r.setup.size || r.setup.size === 0)) {
+              sizePromises.push(fetchSize(r.setup.url).then((s) => { if (s > 0) r.setup.size = s; }));
+            }
+            if (r.portable && (!r.portable.size || r.portable.size === 0)) {
+              sizePromises.push(fetchSize(r.portable.url).then((s) => { if (s > 0) r.portable.size = s; }));
+            }
+          }
+          await Promise.all(sizePromises);
           return rels;
         }
       } catch (e) { /* try next mirror */ }
     }
     return [];
   }
-  function mb(n) { return n ? (n / 1048576).toFixed(1) + ' MB' : '…'; }
+  function mb(n) { return n > 0 ? (n / 1048576).toFixed(1) + ' MB' : '—'; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
   function fmtDate(iso) { try { return iso ? new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''; } catch (e) { return ''; } }
   /* Minimal markdown for release notes: ##/### headings, **bold**, `code`,
