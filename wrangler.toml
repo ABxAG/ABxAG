@@ -1,0 +1,11 @@
+name = "abxag-web"
+compatibility_date = "2026-10-29"
+pages_build_output_dir = "web/dist"
+pages_function_dir = ""
+
+[build]
+command = "cd web && npm install && npm run build"
+cwd = "web"
+
+[deploy]
+webabxag_pages_dev = "web.abxag.pages.dev"
