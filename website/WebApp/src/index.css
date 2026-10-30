@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-dark-950 text-slate-100 antialiased;
+    font-family: 'Inter', 'Noto Sans Bengali', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-dark-900/80 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl;
+  }
+  .btn-primary {
+    @apply bg-abxag-500 hover:bg-abxag-600 text-white font-medium px-6 py-3 rounded-xl transition-all duration-200 active:scale-95;
+  }
+  .btn-secondary {
+    @apply bg-white/10 hover:bg-white/20 text-white font-medium px-6 py-3 rounded-xl transition-all duration-200 active:scale-95;
+  }
+  .input-field {
+    @apply bg-dark-900 border border-white/20 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-abxag-500 focus:border-transparent outline-none transition-all duration-200;
+  }
+  .chat-message {
+    @apply p-4 rounded-2xl max-w-[85%] break-words;
+  }
+  .chat-message-own {
+    @apply bg-abxag-600 text-white rounded-tl-none;
+  }
+  .chat-message-other {
+    @apply bg-dark-900 border border-white/10 text-slate-200 rounded-tr-none;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
